@@ -300,71 +300,6 @@ ComPtr<ID3D11Buffer> Engine::create_buffer(D3D11_BIND_FLAG flag, UINT size) {
 	return res;
 }
 
-void Engine::create_constant_buffer() {
-	constant_buffer = create_buffer(D3D11_BIND_CONSTANT_BUFFER, sizeof(ConstantBufferStruct));
-}
-
-void Engine::create_projection() {
-	float aspectRatio = (float)buffer_desc.Width / (float)buffer_desc.Height;
-
-	matrices.projection = Matrix::CreatePerspectiveFieldOfView(XMConvertToRadians(70), aspectRatio, 0.01f, 100).Transpose();
-}
-
-void Engine::create_cube() {
-	ObjectSerial serial{
-		L"base_vertex.cso",
-		L"base_pixel.cso",
-		{ // descriptors
-			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,
-				0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-
-			{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT,
-				0, sizeof(Vector3), D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		},
-		{ // vertices
-			-0.5f, -0.5f, -0.5f, 0, 0, 0,
-			-0.5f, -0.5f, 0.5f, 0, 0, 1,
-			-0.5f, 0.5f, -0.5f, 0, 1, 0,
-			-0.5f, 0.5f, 0.5f, 0, 1, 1,
-
-			0.5f, -0.5f, -0.5f, 1, 0, 0,
-			0.5f, -0.5f, 0.5f, 1, 0, 1,
-			0.5f, 0.5f, -0.5f, 1, 1, 0,
-			0.5f, 0.5f, 0.5f, 1, 1, 1,
-		},
-		{ // indices
-			0, 2, 1, // -x
-			1, 2, 3,
-
-			4, 5, 6, // +x
-			5, 7, 6,
-
-			0, 1, 5, // -y
-			0, 5, 4,
-
-			2, 6, 7, // +y
-			2, 7, 3,
-
-			0, 4, 6, // -z
-			0, 6, 2,
-
-			1, 3, 7, // +z
-			1, 7, 5
-		},
-		Matrix(),
-		4 * 6
-	};
-	cube.update(*this, serial);
-}
-
-void Engine::release_buffer() {
-	target.Reset();
-	buffer.Reset();
-	depth_stencil_view.Reset();
-	depth_stencil.Reset();
-	context->Flush();
-}
-
 void Engine::run() {
 	if (!IsWindowVisible(window))
 		ShowWindow(window, SW_SHOW);
@@ -400,43 +335,32 @@ void Engine::run() {
 	}
 }
 
+void Engine::init() {
+	// winapi settings
+	register_class();
+	create_window();
+	register_raw_input();
+
+	// directx settings
+	create_d3dcontext();
+	create_window_resources();
+
+	// init scene
+	scene.init(*this);
+}
+
 void Engine::update() {
 	start = std::chrono::high_resolution_clock::now();
-	matrices.world = Matrix::CreateRotationY(XMConvertToRadians((float)frames++)).Transpose();
-
-	if (frames == MAXUINT) frames = 0;
-
-	camera.yaw = -input.mouse.position.x * sensivity;
-	camera.pitch = input.mouse.position.y * sensivity;
-
-	update_camera();
-
+	
 	if (input.keyboard.just_pressed(VK_ESCAPE)) {
 		PostMessage(window, WM_CLOSE, 0, 0);
 		return;
 	}
 
-	//input.mouse.delta = Vector2::Zero;
-
-	Vector2 mv {
-		(float)input.keyboard.pressed('W') - input.keyboard.pressed('S'),
-		(float)input.keyboard.pressed('D') - input.keyboard.pressed('A')
-	};
-	mv.Normalize();
-	mv *= 0.2f; // speed
-	camera.position += camera.direction() * mv.x + camera.left() * mv.y;
+	scene.update(*this);
 }
 
 void Engine::render() {
-	context->UpdateSubresource(
-		constant_buffer.Get(),
-		0,
-		nullptr,
-		&matrices,
-		0,
-		0
-	);
-
 	// Clear the render target and the z-buffer.
 	const float teal[] = { 0.098f, 0.439f, 0.439f, 1.000f };
 	context->ClearRenderTargetView(
@@ -460,12 +384,7 @@ void Engine::render() {
 		depth_stencil_view.Get()
 	);
 
-	ID3D11Buffer* constant_buffers[] {
-		constant_buffer.Get()
-	};
-	context->VSSetConstantBuffers(0, (UINT)std::size(constant_buffers), constant_buffers);
-
-	cube.draw(*this);
+	scene.render(*this);
 
 	end = std::chrono::high_resolution_clock::now();
 	delta_time = std::chrono::duration<float>(end - start).count();

@@ -130,6 +130,7 @@
     <ClCompile Include="Engine.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Object.cpp" />
+    <ClCompile Include="Scene.cpp" />
     <ClCompile Include="SimpleMath.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -139,6 +140,7 @@
     <ClInclude Include="includes.hpp" />
     <ClInclude Include="Input.hpp" />
     <ClInclude Include="Object.hpp" />
+    <ClInclude Include="Scene.hpp" />
     <ClInclude Include="SimpleMath.hpp" />
   </ItemGroup>
   <ItemGroup>

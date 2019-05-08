@@ -53,6 +53,7 @@ using namespace DirectX::SimpleMath;
 using namespace DirectX;
 
 struct Engine;
+struct Scene;
 struct ObjectSerial;
 struct Object;
 
