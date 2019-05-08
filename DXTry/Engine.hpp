@@ -63,7 +63,6 @@ struct Engine {
 
 	WNDCLASSEX window_class;
 	HWND window;
-	HRESULT hr;
 	D3D_FEATURE_LEVEL feature_level;
 	D3D11_TEXTURE2D_DESC buffer_desc;
 	D3D11_VIEWPORT viewport;

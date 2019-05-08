@@ -47,8 +47,7 @@ Engine::Engine(HINSTANCE hInst) :
 	} { }
 
 void Engine::register_class() {
-	if (!RegisterClassEx(&window_class))
-		throw Error();
+	check RegisterClassEx(&window_class);
 }
 
 void Engine::register_raw_input() {
@@ -67,12 +66,11 @@ void Engine::register_raw_input() {
 		}
 	};
 
-	if (!RegisterRawInputDevices(rid, (UINT)std::size(rid), sizeof(RAWINPUTDEVICE)))
-		throw Error();
+	check RegisterRawInputDevices(rid, (UINT)std::size(rid), sizeof(RAWINPUTDEVICE));
 }
 
 void Engine::create_window() {
-	window = CreateWindow(
+	check window = CreateWindow(
 		class_name.data(),
 		window_title.data(),
 		WS_OVERLAPPEDWINDOW,
@@ -84,20 +82,16 @@ void Engine::create_window() {
 		this // lpParam
 	);
 
-	if (window == nullptr)
-		throw Error();
-
 	RECT rect;
-	if (!GetWindowRect(window, &rect))
-		throw Error();
+	check GetWindowRect(window, &rect);
 	UINT cx = (rect.left + rect.right) / 2,
 		cy = (rect.top + rect.bottom) / 2;
-	SetCursorPos(cx, cy);
+	check SetCursorPos(cx, cy);
 	SetCursor(nullptr);
 }
 
 void Engine::create_d3dcontext() {
-	hr = D3D11CreateDevice(
+	check D3D11CreateDevice(
 		nullptr, // adapter
 		D3D_DRIVER_TYPE_HARDWARE,
 		0, // Should be 0 unless the driver is D3D_DRIVER_TYPE_SOFTWARE
@@ -110,13 +104,7 @@ void Engine::create_d3dcontext() {
 		&context
 	);
 
-	if (FAILED(hr))
-		throw Error(hr);
-
-	hr = device.As(&debug);
-
-	if (FAILED(hr))
-		throw Error(hr);
+	check device.As(&debug);
 }
 
 void Engine::create_swap_chain() {
@@ -137,39 +125,27 @@ void Engine::create_swap_chain() {
 	ComPtr<IDXGIAdapter> adapter;
 	ComPtr<IDXGIFactory> factory;
 
-	hr = dxgi_device->GetAdapter(&adapter);
-	if (FAILED(hr))
-		throw Error(hr);
-
-	hr = adapter->GetParent(IID_PPV_ARGS(&factory));
-	if (FAILED(hr))
-		throw Error(hr);
-
-	hr = factory->CreateSwapChain(
+	check dxgi_device->GetAdapter(&adapter);
+	check adapter->GetParent(IID_PPV_ARGS(&factory));
+	check factory->CreateSwapChain(
 		device.Get(),
 		&desc,
 		&swap_chain
 	);
-	if (FAILED(hr))
-		throw Error(hr);
 }
 
 void Engine::create_buffer() {
-	hr = swap_chain->GetBuffer(
+	check swap_chain->GetBuffer(
 		0,
 		__uuidof(ID3D11Texture2D),
 		(void**)&buffer
 	);
-	if (FAILED(hr))
-		throw Error(hr);
 
-	hr = device->CreateRenderTargetView(
+	check device->CreateRenderTargetView(
 		buffer.Get(),
 		nullptr,
 		target.GetAddressOf()
 	);
-	if (FAILED(hr))
-		throw Error(hr);
 
 	buffer->GetDesc(&buffer_desc);
 }
@@ -184,23 +160,19 @@ void Engine::create_depth_stencil() {
 		D3D11_BIND_DEPTH_STENCIL
 	);
 
-	hr = device->CreateTexture2D(
+	check device->CreateTexture2D(
 		&depthStencilDesc,
 		nullptr,
 		&depth_stencil
 	);
-	if (FAILED(hr))
-		throw Error(hr);
 
 	CD3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc(D3D11_DSV_DIMENSION_TEXTURE2D);
 
-	hr = device->CreateDepthStencilView(
+	check device->CreateDepthStencilView(
 		depth_stencil.Get(),
 		&depthStencilViewDesc,
 		depth_stencil_view.GetAddressOf()
 	);
-	if (FAILED(hr))
-		throw Error(hr);
 }
 
 void Engine::create_viewport() {
@@ -230,14 +202,12 @@ std::string_view Engine::load_vertex(
 	std::string_view shb = read_all(path);
 	if (shb.empty())
 		throw Error(L"Could not read vertex shader");
-	HRESULT hr = device->CreateVertexShader(
+	check device->CreateVertexShader(
 		shb.data(),
 		shb.size(),
 		nullptr,
 		&vertex_shader
 	);
-	if (FAILED(hr))
-		throw Error(hr);
 
 	return shb;
 }
@@ -249,14 +219,12 @@ std::string_view Engine::load_pixel(
 	std::string_view shb = read_all(L"base_pixel.cso");
 	if (shb.empty())
 		throw Error(L"Could not read pixel shader");
-	HRESULT hr = device->CreatePixelShader(
+	check device->CreatePixelShader(
 		shb.data(),
 		shb.size(),
 		nullptr,
 		&pixel_shader
 	);
-	if (FAILED(hr))
-		throw Error(hr);
 
 	return shb;
 }
@@ -275,13 +243,11 @@ ComPtr<ID3D11Buffer> Engine::create_buffer(
 		mem_slice_pitch
 	};
 
-	HRESULT hr = device->CreateBuffer(
+	check device->CreateBuffer(
 		&iDesc,
 		&iData,
 		&res
 	);
-	if (FAILED(hr))
-		throw Error(hr);
 	return res;
 }
 
@@ -290,13 +256,11 @@ ComPtr<ID3D11Buffer> Engine::create_buffer(D3D11_BIND_FLAG flag, UINT size) {
 
 	CD3D11_BUFFER_DESC iDesc(size, flag);
 
-	HRESULT hr = device->CreateBuffer(
+	check device->CreateBuffer(
 		&iDesc,
 		nullptr,
 		&res
 	);
-	if (FAILED(hr))
-		throw Error(hr);
 	return res;
 }
 
