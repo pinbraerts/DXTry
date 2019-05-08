@@ -28,7 +28,7 @@ void Object::release() {
 	offset = 0;
 }
 
-void Object::update(Engine& engine, const ObjectSerial& serial) {
+void Object::init(Engine& engine, const ObjectSerial& serial) {
 	release();
 	Layout::operator=(create_layout(engine, serial));
 	vertex_buffer = engine.create_buffer(D3D11_BIND_VERTEX_BUFFER, serial.vertices);

@@ -49,7 +49,7 @@ void Scene::create_cube(Engine& engine) {
 		Matrix(),
 		4 * 6
 	};
-	cube.update(engine, serial);
+	cube.init(engine, serial);
 }
 
 void Scene::update(Engine& engine) {

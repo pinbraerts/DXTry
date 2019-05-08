@@ -53,7 +53,7 @@ struct Object: Layout {
 	Object(Engine& engine, const ObjectSerial& serial);
 
 	void release();
-	void update(Engine& engine, const ObjectSerial& serial);
+	void init(Engine& engine, const ObjectSerial& serial);
 	void render(Engine& engine);
 
 	static Layout create_layout(Engine& engine, const ObjectSerial& serial);
