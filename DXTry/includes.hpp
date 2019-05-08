@@ -18,6 +18,10 @@ using namespace Microsoft::WRL;
 #include <fstream>
 #include <string>
 #include <string_view>
+#include <vector>
+#include <bitset>
+#include <chrono>
+#include <algorithm>
 
 static std::string_view read_all(std::istream& input) {
 	if (!input) return std::string_view();
@@ -34,13 +38,21 @@ static std::string_view read_all(std::wstring_view path) {
 	return read_all(input);
 }
 
+template<class T>
+static void safe_release(T*& ptr) {
+	if (ptr != nullptr) {
+		ptr->Release();
+		ptr = nullptr;
+	}
+}
 
-#include <DirectXMath.h>
+
+#include "SimpleMath.hpp"
+using namespace DirectX::SimpleMath;
 using namespace DirectX;
 
-using mat4x4 = XMFLOAT4X4;
-using mat4 = mat4x4;
-
-using vec3 = XMFLOAT3;
+struct Engine;
+struct ObjectSerial;
+struct Object;
 
 #endif // !DXTRY_INCLUDES_HPP
