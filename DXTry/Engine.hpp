@@ -62,7 +62,6 @@ struct Engine {
 
 	WNDCLASSEX window_class;
 	HWND window;
-	HCURSOR cursor;
 	HRESULT hr;
 	D3D_FEATURE_LEVEL feature_level;
 	D3D11_TEXTURE2D_DESC buffer_desc;
@@ -81,7 +80,7 @@ struct Engine {
 	std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
 	size_t frames = 0;
 	float delta_time = 0.1f;
-	float sensivity = 20.0f;
+	float sensivity = 0.001f;
 
 	struct ConstantBufferStruct {
 		//mat4 model;

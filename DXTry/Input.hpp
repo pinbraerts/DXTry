@@ -6,7 +6,6 @@
 
 struct Input {
 	struct Mouse {
-		Vector2 offset = Vector2::Zero;
 		Vector2 position = Vector2::Zero;
 		Vector2 delta = Vector2::Zero;
 		float scroll = 0;

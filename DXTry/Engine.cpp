@@ -90,12 +90,9 @@ void Engine::create_window() {
 	RECT rect;
 	if (!GetWindowRect(window, &rect))
 		throw Error();
-	input.mouse.offset = {
-		(float)(rect.left + rect.right) / 2,
-		(float)(rect.top + rect.bottom) / 2,
-	};
-	input.mouse.position = input.mouse.offset;
-	SetCursorPos((UINT)input.mouse.offset.x, (UINT)input.mouse.offset.y);
+	UINT cx = (rect.left + rect.right) / 2,
+		cy = (rect.top + rect.bottom) / 2;
+	SetCursorPos(cx, cy);
 	SetCursor(nullptr);
 }
 
@@ -409,8 +406,8 @@ void Engine::update() {
 
 	if (frames == MAXUINT) frames = 0;
 
-	camera.yaw -= input.mouse.delta.x * sensivity * delta_time;
-	camera.pitch += input.mouse.delta.y * sensivity * delta_time;
+	camera.yaw = -input.mouse.position.x * sensivity;
+	camera.pitch = input.mouse.position.y * sensivity;
 
 	update_camera();
 
@@ -418,6 +415,8 @@ void Engine::update() {
 		PostMessage(window, WM_CLOSE, 0, 0);
 		return;
 	}
+
+	//input.mouse.delta = Vector2::Zero;
 
 	Vector2 mv {
 		(float)input.keyboard.pressed('W') - input.keyboard.pressed('S'),
