@@ -23,6 +23,16 @@ struct Engine {
 		UINT message,
 		WPARAM wParam,
 		LPARAM lParam);
+	static std::string_view load_vertex(
+		ID3D11Device* device,
+		ComPtr<ID3D11VertexShader>& vertex_shader,
+		std::wstring_view path
+	);
+	static std::string_view load_pixel(
+		ID3D11Device* device,
+		ComPtr<ID3D11PixelShader>& pixel_shader,
+		std::wstring_view path
+	);
 
 	std::wstring_view class_name = L"Application";
 	std::wstring_view window_title = L"Game";
@@ -82,8 +92,6 @@ struct Engine {
 	void create_window_resources();
 	void release_buffer();
 	
-	std::string_view load_vertex();
-	std::string_view load_pixel();
 	void create_layout();
 	void create_constant_buffer();
 	void create_vertex_buffer();

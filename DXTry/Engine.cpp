@@ -185,15 +185,18 @@ void Engine::create_window_resources() {
 	create_viewport();
 }
 
-std::string_view Engine::load_vertex() {
-	std::string_view shb = read_all(L"base_vertex.cso");
+std::string_view Engine::load_vertex(
+	ID3D11Device* device,
+	ComPtr<ID3D11VertexShader>& vertex_shader,
+	std::wstring_view path) {
+	std::string_view shb = read_all(path);
 	if (shb.empty())
 		throw Error(L"Could not read vertex shader");
-	hr = device->CreateVertexShader(
+	HRESULT hr = device->CreateVertexShader(
 		shb.data(),
 		shb.size(),
 		nullptr,
-		vertex_shader.GetAddressOf()
+		&vertex_shader
 	);
 	if (FAILED(hr))
 		throw Error(hr);
@@ -201,15 +204,18 @@ std::string_view Engine::load_vertex() {
 	return shb;
 }
 
-std::string_view Engine::load_pixel() {
+std::string_view Engine::load_pixel(
+	ID3D11Device* device,
+	ComPtr<ID3D11PixelShader>& pixel_shader,
+	std::wstring_view path) {
 	std::string_view shb = read_all(L"base_pixel.cso");
 	if (shb.empty())
 		throw Error(L"Could not read pixel shader");
-	hr = device->CreatePixelShader(
+	HRESULT hr = device->CreatePixelShader(
 		shb.data(),
 		shb.size(),
 		nullptr,
-		pixel_shader.GetAddressOf()
+		&pixel_shader
 	);
 	if (FAILED(hr))
 		throw Error(hr);
@@ -218,7 +224,7 @@ std::string_view Engine::load_pixel() {
 }
 
 void Engine::create_layout() {
-	std::string_view shb = load_vertex();
+	std::string_view shb = load_vertex(device.Get(), vertex_shader, L"base_vertex.cso");
 
 	D3D11_INPUT_ELEMENT_DESC desc[] = {
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -237,7 +243,7 @@ void Engine::create_layout() {
 
 	delete[] shb.data();
 
-	delete[] load_pixel().data();
+	delete[] load_pixel(device.Get(), pixel_shader, L"base_pixel.cso").data();
 }
 
 void Engine::create_constant_buffer() {
