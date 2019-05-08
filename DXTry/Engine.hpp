@@ -2,22 +2,12 @@
 #define DXTRY_ENGINE_HPP
 
 #include "includes.hpp"
+#include "Error.hpp"
+#include "Object.hpp"
+#include "Input.hpp"
+#include "Camera.hpp"
 
 struct Engine {
-	struct Error {
-		std::wstring msg;
-
-		Error(std::wstring message): msg(message) {}
-
-		Error(HRESULT h) :
-			msg(_com_error(h).ErrorMessage())
-		{ }
-
-		Error() :
-			Error(HRESULT_FROM_WIN32(GetLastError()))
-		{ }
-	};
-
 	static LRESULT CALLBACK WndProc(
 		HWND hWnd,
 		UINT message,
@@ -33,6 +23,25 @@ struct Engine {
 		ComPtr<ID3D11PixelShader>& pixel_shader,
 		std::wstring_view path
 	);
+	ComPtr<ID3D11Buffer> create_buffer(
+		D3D11_BIND_FLAG flag,
+		const void* data, UINT size,
+		UINT mem_pitch = 0,
+		UINT mem_slice_pitch = 0
+	);
+	ComPtr<ID3D11Buffer> create_buffer(
+		D3D11_BIND_FLAG flag,
+		UINT size
+	);
+	template<class T>
+	ComPtr<ID3D11Buffer> create_buffer(
+		D3D11_BIND_FLAG flag,
+		const std::vector<T>& vec,
+		UINT mem_pitch = 0,
+		UINT mem_slice_pitch = 0
+	) {
+		return create_buffer(flag, vec.data(), (UINT)vec.size() * sizeof(T), mem_pitch, mem_slice_pitch);
+	}
 
 	std::wstring_view class_name = L"Application";
 	std::wstring_view window_title = L"Game";
@@ -53,6 +62,7 @@ struct Engine {
 
 	WNDCLASSEX window_class;
 	HWND window;
+	HCURSOR cursor;
 	HRESULT hr;
 	D3D_FEATURE_LEVEL feature_level;
 	D3D11_TEXTURE2D_DESC buffer_desc;
@@ -64,25 +74,26 @@ struct Engine {
 	ComPtr<ID3D11RenderTargetView> target;
 	ComPtr<ID3D11Texture2D> depth_stencil;
 	ComPtr<ID3D11DepthStencilView> depth_stencil_view;
-
-	ComPtr<ID3D11InputLayout> input_layout;
-	ComPtr<ID3D11VertexShader> vertex_shader;
-	ComPtr<ID3D11PixelShader> pixel_shader;
 	ComPtr<ID3D11Buffer> constant_buffer;
-	ComPtr<ID3D11Buffer> vertex_buffer;
-	ComPtr<ID3D11Buffer> index_buffer;
-	size_t n_indices;
+	ComPtr<ID3D11Debug> debug;
+	Input input;
+	Camera camera;
+	std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
 	size_t frames = 0;
+	float delta_time = 0.1f;
+	float sensivity = 20.0f;
 
 	struct ConstantBufferStruct {
-		mat4 model;
-		mat4 view;
-		mat4 projection;
+		//mat4 model;
+		Matrix world;
+		Matrix view;
+		Matrix projection;
 	} matrices;
 
 	Engine(HINSTANCE hInst);
 
 	void register_class();
+	void register_raw_input();
 	void create_window();
 	void create_d3dcontext();
 	void create_swap_chain();
@@ -91,12 +102,14 @@ struct Engine {
 	void create_viewport();
 	void create_window_resources();
 	void release_buffer();
-	
-	void create_layout();
 	void create_constant_buffer();
-	void create_vertex_buffer();
-	void create_index_buffer();
-	void create_view();
+	void create_projection();
+	void update_camera() {
+		camera.update(matrices.view);
+	}
+
+	Object cube;
+	void create_cube();
 
 	HICON get_icon() {
 		TCHAR path[MAX_PATH];

@@ -2,9 +2,9 @@
 #include "Engine.hpp"
 
 Layout::Layout(
-	ID3D11VertexShader* _vertex_shader,
-	ID3D11PixelShader* _pixel_shader,
-	ID3D11InputLayout* _input_layout
+	ComPtr<ID3D11VertexShader> _vertex_shader,
+	ComPtr<ID3D11PixelShader> _pixel_shader,
+	ComPtr<ID3D11InputLayout> _input_layout
 ) : vertex_shader(_vertex_shader),
 	pixel_shader(_pixel_shader),
 	input_layout(_input_layout) {}
@@ -20,8 +20,8 @@ Object::Object(Engine& engine, const ObjectSerial& serial) :
 
 void Object::release() {
 	Layout::release();
-	safe_release(vertex_buffer);
-	safe_release(index_buffer);
+	vertex_buffer.Reset();
+	index_buffer.Reset();
 	model = Matrix();
 	n_indices = 0;
 	stride = 0;
@@ -89,34 +89,14 @@ void Object::draw(Engine& engine) {
 		throw Engine::Error(hr);
 	engine.context->RSSetState(rs);
 	rs->Release();*/
-	engine.context->IASetVertexBuffers(0, 1, &vertex_buffer, &stride, &offset);
-	engine.context->IASetIndexBuffer(index_buffer, DXGI_FORMAT_R16_UINT, 0);
+	ID3D11Buffer* vertex_buffers[] {
+		vertex_buffer.Get()
+	};
+	engine.context->IASetVertexBuffers(0, (UINT)std::size(vertex_buffers), vertex_buffers, &stride, &offset);
+	engine.context->IASetIndexBuffer(index_buffer.Get(), DXGI_FORMAT_R16_UINT, 0);
 	engine.context->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	engine.context->IASetInputLayout(input_layout);
-	engine.context->VSSetShader(vertex_shader, nullptr, 0);
-	engine.context->VSSetConstantBuffers(0, 1, engine.constant_buffer.GetAddressOf());
-	engine.context->PSSetShader(pixel_shader, nullptr, 0);
+	engine.context->IASetInputLayout(input_layout.Get());
+	engine.context->VSSetShader(vertex_shader.Get(), nullptr, 0);
+	engine.context->PSSetShader(pixel_shader.Get(), nullptr, 0);
 	engine.context->DrawIndexed(n_indices, 0, 0);
-}
-
-Object::~Object() {
-	release();
-}
-
-Layout::Layout(Layout && other):
-	vertex_shader(std::exchange(other.vertex_shader, nullptr)),
-	pixel_shader(std::exchange(other.pixel_shader, nullptr)), 
-	input_layout(std::exchange(other.input_layout, nullptr)) {}
-
-Layout& Layout::operator=(Layout&& other) {
-	if (&other == this)
-		return *this;
-	vertex_shader = std::exchange(other.vertex_shader, nullptr);
-	pixel_shader = std::exchange(other.pixel_shader, nullptr);
-	input_layout = std::exchange(other.input_layout , nullptr);
-	return *this;
-}
-
-Layout::~Layout() {
-	release();
 }

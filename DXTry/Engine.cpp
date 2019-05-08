@@ -7,18 +7,23 @@ LRESULT CALLBACK Engine::WndProc(
 	LPARAM lParam) {
 
 	Engine* sys = (Engine*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
-	if (sys == nullptr) {
+
+	switch (message) {
+	case WM_CREATE:
+	{
 		CREATESTRUCT* cs = (CREATESTRUCT*)lParam;
 		if (cs != nullptr) {
 			sys = (Engine*)cs->lpCreateParams;
 			SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)sys);
 		}
 		else return DefWindowProc(hWnd, message, wParam, lParam);
+		return S_OK;
 	}
-
-	switch (message) {
 	case WM_DESTROY:
 		PostQuitMessage(0);
+		return S_OK;
+	case WM_INPUT:
+		sys->input.update(lParam);
 		return S_OK;
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
@@ -46,6 +51,26 @@ void Engine::register_class() {
 		throw Error();
 }
 
+void Engine::register_raw_input() {
+	RAWINPUTDEVICE rid[2]{
+		{
+			0x01, // HID usage page generic
+			0x02, // mouse
+			RIDEV_NOLEGACY,
+			0
+		},
+		{
+			0x01, // HID usage page generic
+			0x06, // keyboard
+			RIDEV_NOLEGACY,
+			0
+		}
+	};
+
+	if (!RegisterRawInputDevices(rid, (UINT)std::size(rid), sizeof(RAWINPUTDEVICE)))
+		throw Error();
+}
+
 void Engine::create_window() {
 	window = CreateWindow(
 		class_name.data(),
@@ -61,6 +86,17 @@ void Engine::create_window() {
 
 	if (window == nullptr)
 		throw Error();
+
+	RECT rect;
+	if (!GetWindowRect(window, &rect))
+		throw Error();
+	input.mouse.offset = {
+		(float)(rect.left + rect.right) / 2,
+		(float)(rect.top + rect.bottom) / 2,
+	};
+	input.mouse.position = input.mouse.offset;
+	SetCursorPos((UINT)input.mouse.offset.x, (UINT)input.mouse.offset.y);
+	SetCursor(nullptr);
 }
 
 void Engine::create_d3dcontext() {
@@ -76,6 +112,11 @@ void Engine::create_d3dcontext() {
 		&feature_level,
 		&context
 	);
+
+	if (FAILED(hr))
+		throw Error(hr);
+
+	hr = device.As(&debug);
 
 	if (FAILED(hr))
 		throw Error(hr);
@@ -223,148 +264,100 @@ std::string_view Engine::load_pixel(
 	return shb;
 }
 
-void Engine::create_layout() {
-	std::string_view shb = load_vertex(device.Get(), vertex_shader, L"base_vertex.cso");
+ComPtr<ID3D11Buffer> Engine::create_buffer(
+	D3D11_BIND_FLAG flag,
+	const void* data, UINT size,
+	UINT mem_pitch, UINT mem_slice_pitch) {
+	ComPtr<ID3D11Buffer> res;
 
-	D3D11_INPUT_ELEMENT_DESC desc[] = {
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+	CD3D11_BUFFER_DESC iDesc(size, flag);
+
+	D3D11_SUBRESOURCE_DATA iData {
+		data,
+		mem_pitch,
+		mem_slice_pitch
 	};
 
-	hr = device->CreateInputLayout(
-		desc,
-		(UINT)std::size(desc),
-		shb.data(),
-		shb.size(),
-		input_layout.GetAddressOf()
+	HRESULT hr = device->CreateBuffer(
+		&iDesc,
+		&iData,
+		&res
 	);
 	if (FAILED(hr))
 		throw Error(hr);
+	return res;
+}
 
-	delete[] shb.data();
+ComPtr<ID3D11Buffer> Engine::create_buffer(D3D11_BIND_FLAG flag, UINT size) {
+	ComPtr<ID3D11Buffer> res;
 
-	delete[] load_pixel(device.Get(), pixel_shader, L"base_pixel.cso").data();
+	CD3D11_BUFFER_DESC iDesc(size, flag);
+
+	HRESULT hr = device->CreateBuffer(
+		&iDesc,
+		nullptr,
+		&res
+	);
+	if (FAILED(hr))
+		throw Error(hr);
+	return res;
 }
 
 void Engine::create_constant_buffer() {
-	CD3D11_BUFFER_DESC desc {
-		sizeof(ConstantBufferStruct),
-		D3D11_BIND_CONSTANT_BUFFER
-	};
-	hr = device->CreateBuffer(
-		&desc,
-		nullptr,
-		constant_buffer.GetAddressOf()
-	);
-	if (FAILED(hr))
-		throw Error(hr);
+	constant_buffer = create_buffer(D3D11_BIND_CONSTANT_BUFFER, sizeof(ConstantBufferStruct));
 }
 
-void Engine::create_vertex_buffer() {
-	float vertices[] {
-		-0.5f, -0.5f, -0.5f, 0, 0, 0,
-		-0.5f, -0.5f, 0.5f, 0, 0, 1,
-		-0.5f, 0.5f, -0.5f, 0, 1, 0,
-		-0.5f, 0.5f, 0.5f, 0, 1, 1,
-
-		0.5f, -0.5f, -0.5f, 1, 0, 0,
-		0.5f, -0.5f, 0.5f, 1, 0, 1,
-		0.5f, 0.5f, -0.5f, 1, 1, 0,
-		0.5f, 0.5f, 0.5f, 1, 1, 1,
-	};
-
-	CD3D11_BUFFER_DESC vDesc(
-		sizeof(vertices),
-		D3D11_BIND_VERTEX_BUFFER
-	);
-
-	D3D11_SUBRESOURCE_DATA vData;
-	ZeroMemory(&vData, sizeof(D3D11_SUBRESOURCE_DATA));
-	vData.pSysMem = vertices;
-	vData.SysMemPitch = 0;
-	vData.SysMemSlicePitch = 0;
-
-	hr = device->CreateBuffer(
-		&vDesc,
-		&vData,
-		&vertex_buffer
-	);
-	if (FAILED(hr))
-		throw Error(hr);
-}
-
-void Engine::create_index_buffer() {
-	unsigned short indices[] =
-	{
-		0, 2, 1, // -x
-		1, 2, 3,
-
-		4, 5, 6, // +x
-		5, 7, 6,
-
-		0, 1, 5, // -y
-		0, 5, 4,
-		2, 6, 7, // +y
-		2, 7, 3,
-
-		0, 4, 6, // -z
-		0, 6, 2,
-
-		1, 3, 7, // +z
-		1, 7, 5,
-	};
-
-	n_indices = std::size(indices);
-
-	CD3D11_BUFFER_DESC iDesc(
-		sizeof(indices),
-		D3D11_BIND_INDEX_BUFFER
-	);
-
-	D3D11_SUBRESOURCE_DATA iData;
-	ZeroMemory(&iData, sizeof(D3D11_SUBRESOURCE_DATA));
-	iData.pSysMem = indices;
-	iData.SysMemPitch = 0;
-	iData.SysMemSlicePitch = 0;
-
-	hr = device->CreateBuffer(
-		&iDesc,
-		&iData,
-		&index_buffer
-	);
-	if (FAILED(hr))
-		throw Error(hr);
-}
-
-void Engine::create_view() {
-	DirectX::XMVECTOR eye = DirectX::XMVectorSet(0.0f, 0.7f, 1.5f, 0.f);
-	DirectX::XMVECTOR at = DirectX::XMVectorSet(0.0f, -0.1f, 0.0f, 0.f);
-	DirectX::XMVECTOR up = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.f);
-
-	DirectX::XMStoreFloat4x4(
-		&matrices.view,
-		DirectX::XMMatrixTranspose(
-			DirectX::XMMatrixLookAtRH(
-				eye,
-				at,
-				up
-			)
-		)
-	);
-
+void Engine::create_projection() {
 	float aspectRatio = (float)buffer_desc.Width / (float)buffer_desc.Height;
 
-	DirectX::XMStoreFloat4x4(
-		&matrices.projection,
-		DirectX::XMMatrixTranspose(
-			DirectX::XMMatrixPerspectiveFovRH(
-				DirectX::XMConvertToRadians(70),
-				aspectRatio,
-				0.01f,
-				100.0f
-			)
-		)
-	);
+	matrices.projection = Matrix::CreatePerspectiveFieldOfView(XMConvertToRadians(70), aspectRatio, 0.01f, 100).Transpose();
+}
+
+void Engine::create_cube() {
+	ObjectSerial serial{
+		L"base_vertex.cso",
+		L"base_pixel.cso",
+		{ // descriptors
+			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,
+				0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+
+			{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT,
+				0, sizeof(Vector3), D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		},
+		{ // vertices
+			-0.5f, -0.5f, -0.5f, 0, 0, 0,
+			-0.5f, -0.5f, 0.5f, 0, 0, 1,
+			-0.5f, 0.5f, -0.5f, 0, 1, 0,
+			-0.5f, 0.5f, 0.5f, 0, 1, 1,
+
+			0.5f, -0.5f, -0.5f, 1, 0, 0,
+			0.5f, -0.5f, 0.5f, 1, 0, 1,
+			0.5f, 0.5f, -0.5f, 1, 1, 0,
+			0.5f, 0.5f, 0.5f, 1, 1, 1,
+		},
+		{ // indices
+			0, 2, 1, // -x
+			1, 2, 3,
+
+			4, 5, 6, // +x
+			5, 7, 6,
+
+			0, 1, 5, // -y
+			0, 5, 4,
+
+			2, 6, 7, // +y
+			2, 7, 3,
+
+			0, 4, 6, // -z
+			0, 6, 2,
+
+			1, 3, 7, // +z
+			1, 7, 5
+		},
+		Matrix(),
+		4 * 6
+	};
+	cube.update(*this, serial);
 }
 
 void Engine::release_buffer() {
@@ -411,18 +404,28 @@ void Engine::run() {
 }
 
 void Engine::update() {
-	DirectX::XMStoreFloat4x4(
-		&matrices.model,
-		DirectX::XMMatrixTranspose(
-			DirectX::XMMatrixRotationY(
-				DirectX::XMConvertToRadians(
-				(float)frames++
-				)
-			)
-		)
-	);
+	start = std::chrono::high_resolution_clock::now();
+	matrices.world = Matrix::CreateRotationY(XMConvertToRadians((float)frames++)).Transpose();
 
 	if (frames == MAXUINT) frames = 0;
+
+	camera.yaw -= input.mouse.delta.x * sensivity * delta_time;
+	camera.pitch += input.mouse.delta.y * sensivity * delta_time;
+
+	update_camera();
+
+	if (input.keyboard.just_pressed(VK_ESCAPE)) {
+		PostMessage(window, WM_CLOSE, 0, 0);
+		return;
+	}
+
+	Vector2 mv {
+		(float)input.keyboard.pressed('W') - input.keyboard.pressed('S'),
+		(float)input.keyboard.pressed('D') - input.keyboard.pressed('A')
+	};
+	mv.Normalize();
+	mv *= 0.2f; // speed
+	camera.position += camera.direction() * mv.x + camera.left() * mv.y;
 }
 
 void Engine::render() {
@@ -444,11 +447,11 @@ void Engine::render() {
 	context->ClearDepthStencilView(
 		depth_stencil_view.Get(),
 		D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
-		1.0f,
+		1,
 		0
 	);
 
-	ID3D11RenderTargetView* targets[] = {
+	ID3D11RenderTargetView* targets[] {
 		target.Get()
 	};
 	// Set the render target.
@@ -458,54 +461,13 @@ void Engine::render() {
 		depth_stencil_view.Get()
 	);
 
-	// Set up the IA stage by setting the input topology and layout.
-	UINT stride = sizeof(float) * 6;
-	UINT offset = 0;
+	ID3D11Buffer* constant_buffers[] {
+		constant_buffer.Get()
+	};
+	context->VSSetConstantBuffers(0, (UINT)std::size(constant_buffers), constant_buffers);
 
-	context->IASetVertexBuffers(
-		0,
-		1,
-		vertex_buffer.GetAddressOf(),
-		&stride,
-		&offset
-	);
+	cube.draw(*this);
 
-	context->IASetIndexBuffer(
-		index_buffer.Get(),
-		DXGI_FORMAT_R16_UINT,
-		0
-	);
-
-	context->IASetPrimitiveTopology(
-		D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST
-	);
-
-	context->IASetInputLayout(input_layout.Get());
-
-	// Set up the vertex shader stage.
-	context->VSSetShader(
-		vertex_shader.Get(),
-		nullptr,
-		0
-	);
-
-	context->VSSetConstantBuffers(
-		0,
-		1,
-		constant_buffer.GetAddressOf()
-	);
-
-	// Set up the pixel shader stage.
-	context->PSSetShader(
-		pixel_shader.Get(),
-		nullptr,
-		0
-	);
-
-	// Calling Draw tells Direct3D to start sending commands to the graphics device.
-	context->DrawIndexed(
-		(UINT)n_indices,
-		0,
-		0
-	);
+	end = std::chrono::high_resolution_clock::now();
+	delta_time = std::chrono::duration<float>(end - start).count();
 }

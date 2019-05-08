@@ -6,6 +6,7 @@
 #include <d3d11.h>
 // d3d12
 #include <dxgi1_6.h>
+#include <dxgidebug.h>
 #include <wrl.h>
 #include <tchar.h>
 #undef max

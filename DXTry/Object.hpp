@@ -17,34 +17,32 @@ struct ObjectSerial {
 };
 
 struct Layout {
-	ID3D11VertexShader* vertex_shader = nullptr;
-	ID3D11PixelShader* pixel_shader = nullptr;
-	ID3D11InputLayout* input_layout = nullptr;
+	ComPtr<ID3D11VertexShader> vertex_shader;
+	ComPtr<ID3D11PixelShader> pixel_shader;
+	ComPtr<ID3D11InputLayout> input_layout;
 
 	Layout() = default;
-	Layout(const Layout&) = delete;
-	Layout(Layout&& other);
+	Layout(const Layout&) = default;
+	Layout(Layout&& other) = default;
 	Layout(
-		ID3D11VertexShader* _vertex_shader,
-		ID3D11PixelShader* _pixel_shader,
-		ID3D11InputLayout* _input_layout
+		ComPtr<ID3D11VertexShader> _vertex_shader,
+		ComPtr<ID3D11PixelShader> _pixel_shader,
+		ComPtr<ID3D11InputLayout> _input_layout
 	);
 
-	Layout& operator=(Layout&& other);
-	Layout& operator=(const Layout&) = delete;
+	Layout& operator=(Layout&& other) = default;
+	Layout& operator=(const Layout&) = default;
 
 	void release() {
-		safe_release(vertex_shader);
-		safe_release(pixel_shader);
-		safe_release(input_layout);
+		vertex_shader.Reset();
+		pixel_shader.Reset();
+		input_layout.Reset();
 	}
-
-	~Layout();
 };
 
 struct Object: Layout {
-	ID3D11Buffer* vertex_buffer = nullptr;
-	ID3D11Buffer* index_buffer = nullptr;
+	ComPtr<ID3D11Buffer> vertex_buffer;
+	ComPtr<ID3D11Buffer> index_buffer;
 
 	Matrix model;
 	UINT n_indices;
@@ -59,8 +57,6 @@ struct Object: Layout {
 	void draw(Engine& engine);
 
 	static Layout create_layout(Engine& engine, const ObjectSerial& serial);
-
-	~Object();
 };
 
 #endif // !DXTRY_OBJECT_HPP
