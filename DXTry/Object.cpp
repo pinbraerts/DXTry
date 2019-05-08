@@ -18,25 +18,30 @@ Object::Object(Engine& engine, const ObjectSerial& serial) :
 	stride(serial.stride),
 	offset(serial.offset) {}
 
-void Object::release() {
-	Layout::release();
-	vertex_buffer.Reset();
-	index_buffer.Reset();
-	model = Matrix();
-	n_indices = 0;
-	stride = 0;
-	offset = 0;
-}
-
 void Object::init(Engine& engine, const ObjectSerial& serial) {
-	release();
 	Layout::operator=(create_layout(engine, serial));
 	vertex_buffer = engine.create_buffer(D3D11_BIND_VERTEX_BUFFER, serial.vertices);
 	index_buffer = engine.create_buffer(D3D11_BIND_INDEX_BUFFER, serial.indices);
+	constant_buffer = engine.create_buffer(D3D11_BIND_CONSTANT_BUFFER, sizeof(Matrix));
 	model = serial.model;
 	n_indices = (UINT)serial.indices.size();
 	stride = serial.stride;
 	offset = serial.offset;
+}
+
+void Object::update(Engine& engine) {
+	model = Matrix::CreateRotationY(XMConvertToRadians((float)engine.frames++)).Transpose();
+
+	if (engine.frames == MAXUINT) engine.frames = 0;
+
+	engine.context->UpdateSubresource(
+		constant_buffer.Get(),
+		0,
+		nullptr,
+		&model,
+		0,
+		0
+	);
 }
 
 Layout Object::create_layout(Engine& engine, const ObjectSerial& serial) {
@@ -47,15 +52,13 @@ Layout Object::create_layout(Engine& engine, const ObjectSerial& serial) {
 		serial.vertex_path
 	);
 
-	HRESULT hr = engine.device->CreateInputLayout(
+	check engine.device->CreateInputLayout(
 		serial.descriptors.data(),
 		(UINT)serial.descriptors.size(),
 		shb.data(),
 		shb.size(),
 		&res.input_layout
 	);
-	if (FAILED(hr))
-		throw Error(hr);
 
 	delete[] shb.data();
 
@@ -89,10 +92,18 @@ void Object::render(Engine& engine) {
 		throw Engine::Error(hr);
 	engine.context->RSSetState(rs);
 	rs->Release();*/
+
+	// set correct buffers
+	ID3D11Buffer* constant_buffers[] {
+		constant_buffer.Get()
+	};
+	engine.context->VSSetConstantBuffers(1, (UINT)std::size(constant_buffers), constant_buffers);
+
 	ID3D11Buffer* vertex_buffers[] {
 		vertex_buffer.Get()
 	};
 	engine.context->IASetVertexBuffers(0, (UINT)std::size(vertex_buffers), vertex_buffers, &stride, &offset);
+
 	engine.context->IASetIndexBuffer(index_buffer.Get(), DXGI_FORMAT_R16_UINT, 0);
 	engine.context->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	engine.context->IASetInputLayout(input_layout.Get());

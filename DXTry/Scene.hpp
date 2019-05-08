@@ -7,7 +7,6 @@
 
 struct Scene {
 	struct ConstantBufferStruct {
-		//mat4 model;
 		Matrix world;
 		Matrix view;
 		Matrix projection;

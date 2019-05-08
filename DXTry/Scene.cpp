@@ -53,13 +53,11 @@ void Scene::create_cube(Engine& engine) {
 }
 
 void Scene::update(Engine& engine) {
-	matrices.world = Matrix::CreateRotationY(XMConvertToRadians((float)engine.frames++)).Transpose();
-
-	if (engine.frames == MAXUINT) engine.frames = 0;
-
+	// camera rotation
 	camera.yaw = -engine.input.mouse.position.x * engine.sensivity;
 	camera.pitch = engine.input.mouse.position.y * engine.sensivity;
 
+	// camera movement
 	Vector2 mv {
 		(float)engine.input.keyboard.pressed('W') - engine.input.keyboard.pressed('S'),
 		(float)engine.input.keyboard.pressed('D') - engine.input.keyboard.pressed('A')
@@ -68,8 +66,12 @@ void Scene::update(Engine& engine) {
 	mv *= 1000.0f * engine.delta_time; // speed
 	camera.position += camera.direction() * mv.x + camera.left() * mv.y;
 
+	// matrices update
 	matrices.view = camera.view();
 	matrices.projection = camera.projection();
+
+	// children update
+	cube.update(engine);
 
 	engine.context->UpdateSubresource(
 		constant_buffer.Get(),
