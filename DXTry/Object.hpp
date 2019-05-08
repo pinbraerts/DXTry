@@ -54,7 +54,7 @@ struct Object: Layout {
 
 	void release();
 	void update(Engine& engine, const ObjectSerial& serial);
-	void draw(Engine& engine);
+	void render(Engine& engine);
 
 	static Layout create_layout(Engine& engine, const ObjectSerial& serial);
 };

@@ -67,7 +67,7 @@ Layout Object::create_layout(Engine& engine, const ObjectSerial& serial) {
 	return res;
 }
 
-void Object::draw(Engine& engine) {
+void Object::render(Engine& engine) {
 	/*D3D11_RASTERIZER_DESC desc {
 		D3D11_FILL_SOLID,
 		D3D11_CULL_NONE,
