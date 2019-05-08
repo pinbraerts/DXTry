@@ -12,13 +12,12 @@ int APIENTRY _tWinMain(
 	Engine app(hInstance);
 	app.register_class();
 	app.create_window();
+	app.register_raw_input();
 	app.create_d3dcontext();
 	app.create_window_resources();
-	app.create_layout();
 	app.create_constant_buffer();
-	app.create_vertex_buffer();
-	app.create_index_buffer();
-	app.create_view();
+	app.create_projection();
+	app.create_cube();
 	app.run();
 #ifndef _DEBUG
 	}
