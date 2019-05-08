@@ -6,6 +6,7 @@
 #include "Object.hpp"
 #include "Input.hpp"
 #include "Camera.hpp"
+#include "Scene.hpp"
 
 struct Engine {
 	static LRESULT CALLBACK WndProc(
@@ -62,7 +63,6 @@ struct Engine {
 
 	WNDCLASSEX window_class;
 	HWND window;
-	HRESULT hr;
 	D3D_FEATURE_LEVEL feature_level;
 	D3D11_TEXTURE2D_DESC buffer_desc;
 	D3D11_VIEWPORT viewport;
@@ -73,21 +73,13 @@ struct Engine {
 	ComPtr<ID3D11RenderTargetView> target;
 	ComPtr<ID3D11Texture2D> depth_stencil;
 	ComPtr<ID3D11DepthStencilView> depth_stencil_view;
-	ComPtr<ID3D11Buffer> constant_buffer;
 	ComPtr<ID3D11Debug> debug;
 	Input input;
-	Camera camera;
 	std::chrono::time_point<std::chrono::high_resolution_clock> start, end;
 	size_t frames = 0;
 	float delta_time = 0.1f;
 	float sensivity = 0.001f;
-
-	struct ConstantBufferStruct {
-		//mat4 model;
-		Matrix world;
-		Matrix view;
-		Matrix projection;
-	} matrices;
+	Scene scene;
 
 	Engine(HINSTANCE hInst);
 
@@ -100,15 +92,6 @@ struct Engine {
 	void create_depth_stencil();
 	void create_viewport();
 	void create_window_resources();
-	void release_buffer();
-	void create_constant_buffer();
-	void create_projection();
-	void update_camera() {
-		camera.update(matrices.view);
-	}
-
-	Object cube;
-	void create_cube();
 
 	HICON get_icon() {
 		TCHAR path[MAX_PATH];
@@ -119,9 +102,10 @@ struct Engine {
 
 	void run();
 
+	void init();
 	void update();
-
 	void render();
+	// void destroy();
 
 	void present() {
 		swap_chain->Present(1, 0);

@@ -32,17 +32,12 @@ struct Layout {
 
 	Layout& operator=(Layout&& other) = default;
 	Layout& operator=(const Layout&) = default;
-
-	void release() {
-		vertex_shader.Reset();
-		pixel_shader.Reset();
-		input_layout.Reset();
-	}
 };
 
 struct Object: Layout {
 	ComPtr<ID3D11Buffer> vertex_buffer;
 	ComPtr<ID3D11Buffer> index_buffer;
+	ComPtr<ID3D11Buffer> constant_buffer;
 
 	Matrix model;
 	UINT n_indices;
@@ -52,9 +47,10 @@ struct Object: Layout {
 	Object() = default;
 	Object(Engine& engine, const ObjectSerial& serial);
 
-	void release();
-	void update(Engine& engine, const ObjectSerial& serial);
-	void draw(Engine& engine);
+	void init(Engine& engine, const ObjectSerial& serial);
+	void update(Engine& engine);
+	void render(Engine& engine);
+	// void destroy(Engine& engine);
 
 	static Layout create_layout(Engine& engine, const ObjectSerial& serial);
 };

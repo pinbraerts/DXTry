@@ -10,14 +10,7 @@ int APIENTRY _tWinMain(
 	try {
 #endif // !_DEBUG
 	Engine app(hInstance);
-	app.register_class();
-	app.create_window();
-	app.register_raw_input();
-	app.create_d3dcontext();
-	app.create_window_resources();
-	app.create_constant_buffer();
-	app.create_projection();
-	app.create_cube();
+	app.init();
 	app.run();
 #ifndef _DEBUG
 	}
