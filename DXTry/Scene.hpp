@@ -6,19 +6,24 @@
 #include "Object.hpp"
 
 struct Scene {
-	struct ConstantBufferStruct {
+	struct {
 		Matrix world;
 		Matrix view;
 		Matrix projection;
-	} matrices;
+	} transform;
 
-	ComPtr<ID3D11Buffer> constant_buffer;
+	struct {
+		Vector3 light_position;
+		Vector3 eye;
+		Vector4 light_color;
+		Vector2 _;
+	} light;
+
+	ComPtr<ID3D11Buffer> constant_buffers[2];
 	Camera camera;
 
 	Object cube;
 	void create_cube(Engine& engine);
-
-	void create_constant_buffer(Engine& engine);
 
 	void init(Engine& engine);
 	void update(Engine& engine);
