@@ -22,8 +22,8 @@ struct Scene: IObject {
 	ComPtr<ID3D11Buffer> constant_buffers[2];
 	Camera camera;
 
-	Object cube;
-	void create_cube(Engine& engine);
+	std::vector<Object> cubes;
+	void create_cubes(Engine& engine);
 
 	Object lamp;
 	void create_lamp(Engine& engine);

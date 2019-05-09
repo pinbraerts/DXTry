@@ -1,7 +1,7 @@
 #include "Scene.hpp"
 #include "Engine.hpp"
 
-void Scene::create_cube(Engine& engine) {
+void Scene::create_cubes(Engine& engine) {
 	MaterialData cube_material {
 		L"light_pixel.cso",
 		{
@@ -53,12 +53,15 @@ void Scene::create_cube(Engine& engine) {
 		},
 		4 * 6
 	};
-	cube.set({
+	cubes.emplace_back(engine, ObjectData {
 		std::make_shared<Mesh>(std::move(cube_mesh)),
 		std::make_shared<Material>(std::move(cube_material)),
 		Matrix()
 	});
-	cube.init(engine);
+	for (size_t i = 0; i < 4; ++i) {
+		cubes.push_back(cubes.back().clone(engine));
+		cubes.back().model = Matrix::CreateTranslation(cubes.back().model.Transpose().Translation() + Vector3(2, 0, 0)).Transpose();
+	}
 }
 
 void Scene::update(Engine& engine) {
@@ -82,7 +85,8 @@ void Scene::update(Engine& engine) {
 	light.eye = camera.position;
 
 	// children update
-	cube.update(engine);
+	for(auto& cube: cubes)
+		cube.update(engine);
 	lamp.update(engine);
 
 	engine.context->UpdateSubresource(
@@ -114,7 +118,8 @@ void Scene::render(Engine& engine) {
 	engine.context->PSSetConstantBuffers(1, (UINT)std::size(pscbs), pscbs);
 
 	// render children
-	cube.render(engine);
+	for (auto& cube : cubes)
+		cube.render(engine);
 	lamp.render(engine);
 }
 
@@ -184,6 +189,6 @@ void Scene::init(Engine& engine) {
 	};
 
 	// init children
-	create_cube(engine);
+	create_cubes(engine);
 	create_lamp(engine);
 }

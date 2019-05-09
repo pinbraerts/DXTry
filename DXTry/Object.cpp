@@ -18,7 +18,7 @@ void Object::init(Engine& engine) {
 }
 
 void Object::update(Engine& engine) {
-	model = Matrix::CreateRotationY(XMConvertToRadians((float)engine.frames++)).Transpose();
+	//model = Matrix::CreateRotationY(XMConvertToRadians((float)engine.frames++)).Transpose();
 
 	if (engine.frames == MAXUINT) engine.frames = 0;
 
@@ -30,6 +30,15 @@ void Object::update(Engine& engine) {
 		0,
 		0
 	);
+}
+
+Object Object::clone(Engine& engine) {
+	Object res;
+	res.material = material;
+	res.mesh = mesh;
+	res.constant_buffer = engine.create_buffer(D3D11_BIND_CONSTANT_BUFFER, sizeof(model));
+	res.model = model;
+	return res;
 }
 
 void Object::render(Engine& engine) {

@@ -24,6 +24,8 @@ struct Object: IObject, ObjectData {
 	void init(Engine& engine) override;
 	void render(Engine& engine) override;
 	void update(Engine& engine) override;
+
+	Object clone(Engine& engine);
 };
 
 #endif // !DXTRY_OBJECT_HPP
