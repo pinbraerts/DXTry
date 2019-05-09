@@ -72,28 +72,38 @@ void Scene::update(Engine& engine) {
 		(float)engine.input.keyboard.pressed('D') - engine.input.keyboard.pressed('A')
 	};
 	mv.Normalize();
-	mv *= 1000.0f * engine.delta_time; // speed
+	mv *= 100.0f * engine.delta_time; // speed
 	camera.position += camera.direction() * mv.x + camera.left() * mv.y;
 
 	// matrices update
 	transform.view = camera.view();
 	transform.projection = camera.projection();
 
-	lamp.position = camera.position + Vector4(0, 0, 0, lamp.position.w); // flashlight
-	lamp.eye = camera.position + Vector4(0, 0, 0, 1.0f);
-	lamp.direction = camera.direction() + Vector4(0, 0, 0, lamp.direction.w);
-	lamp.premultiply(transform.world);
+	lights[0].position = camera.position + Vector4(0, 0, 0, lights[0].position.w);
+	lights[0].direction = camera.direction() + Vector4(0, 0, 0, lights[0].direction.w);
+
+	for (auto& light : lights) {
+		light.eye = camera.position + Vector4(0, 0, 0, 1.0f);
+		light.premultiply(transform.world);
+	}
 
 	// children update
 	for(auto& cube: cubes)
 		cube.update(engine);
-	lamp.update(engine);
 
 	engine.context->UpdateSubresource(
-		constant_buffer.Get(),
+		transform_buffer.Get(),
 		0,
 		nullptr,
 		&transform,
+		0,
+		0
+	);
+	engine.context->UpdateSubresource(
+		lights_buffer.Get(),
+		0,
+		nullptr,
+		lights.data(),
 		0,
 		0
 	);
@@ -102,67 +112,22 @@ void Scene::update(Engine& engine) {
 void Scene::render(Engine& engine) {
 	// set correct buffers
 	ID3D11Buffer* pscbs[] {
-		constant_buffer.Get()
+		lights_buffer.Get()
 	};
-	engine.context->VSSetConstantBuffers(0, (UINT)std::size(pscbs), pscbs);
-	engine.context->GSSetConstantBuffers(0, (UINT)std::size(pscbs), pscbs);
+	engine.context->PSSetConstantBuffers(1, (UINT)std::size(pscbs), pscbs);
+
+	ID3D11Buffer* vscbs[]{
+		transform_buffer.Get()
+	};
+	engine.context->VSSetConstantBuffers(0, (UINT)std::size(vscbs), vscbs);
 
 	// render children
-	lamp.render(engine);
 	for (auto& cube : cubes)
 		cube.render(engine);
 }
 
-void Scene::create_lamp(Engine & engine) {
-	MaterialData lamp_material {
-		L"base_pixel.cso"
-	};
-	MeshData lamp_mesh {
-		L"base_vertex.cso", L"",
-		{ // descriptors
-			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,
-				0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-
-			{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT,
-				0, sizeof(Vector3), D3D11_INPUT_PER_VERTEX_DATA, 0 }
-		},
-		{ // vertices
-			-0.5f, -0.5f, -0.5f,
-			-0.5f, -0.5f, 0.5f,
-			-0.5f, 0.5f, -0.5f,
-			-0.5f, 0.5f, 0.5f,
-
-			0.5f, -0.5f, -0.5f,
-			0.5f, -0.5f, 0.5f,
-			0.5f, 0.5f, -0.5f,
-			0.5f, 0.5f, 0.5f,
-		},
-		{ // indices
-			0, 2, 1, // -x
-			1, 2, 3,
-
-			4, 5, 6, // +x
-			5, 7, 6,
-
-			0, 1, 5, // -y
-			0, 5, 4,
-
-			2, 6, 7, // +y
-			2, 7, 3,
-
-			0, 4, 6, // -z
-			0, 6, 2,
-
-			1, 3, 7, // +z
-			1, 7, 5
-		},
-		sizeof(Vector3) * 1
-	};
-	lamp.set({
-		std::make_unique<Mesh>(std::move(lamp_mesh)),
-		std::make_unique<Material>(std::move(lamp_material)),
-		Matrix()
-	}, {
+void Scene::create_lights(Engine & engine) {
+	lights.push_back({
 		Vector4::Zero, // position, flashlight
 		Vector4::Zero, // eye
 		Vector4(1, 1, 1, 1), // ambient
@@ -171,15 +136,32 @@ void Scene::create_lamp(Engine & engine) {
 		Vector4(1, 0.09f, 0.032f, cosf(XMConvertToRadians(12.5f))), // attenuation, cut_off
 		Vector4(0, 0, 0, cosf(XMConvertToRadians(17.5f))) // direction, outer
 	});
-	lamp.init(engine);
+	lights.push_back({
+		Vector4(-1, -1, -1, 1), // direction
+		Vector4::Zero, // eye
+		Vector4(1, 1, 1, 1), // ambient
+		Vector4(0.8f, 0.8f, 0.8f, 1), // diffuse
+		Vector4(1, 1, 1, 1), // specular
+	});
+	lights.push_back({
+		Vector4(3, 1, 3, 0), // position
+		Vector4::Zero, // eye
+		Vector4(1, 1, 1, 1), // ambient
+		Vector4(0.8f, 0.8f, 0.8f, 1), // diffuse
+		Vector4(1, 1, 1, 1), // specular
+		Vector4(1, 0.09f, 0.032f, 0), // attenuation, cut_off
+		Vector4(0, 0, 0, 0) // direction, outer
+	});
 }
 
 void Scene::init(Engine& engine) {
 	// init fields
-	constant_buffer = engine.create_buffer(D3D11_BIND_CONSTANT_BUFFER, sizeof(transform));
+	transform_buffer = engine.create_buffer(D3D11_BIND_CONSTANT_BUFFER, sizeof(transform));
 	camera.aspect_ratio = (float)engine.buffer_desc.Width / (float)engine.buffer_desc.Height;
 
 	// init children
 	create_cubes(engine);
-	create_lamp(engine);
+	create_lights(engine);
+
+	lights_buffer = engine.create_buffer(D3D11_BIND_CONSTANT_BUFFER, lights);
 }
