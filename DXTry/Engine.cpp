@@ -195,13 +195,14 @@ void Engine::create_window_resources() {
 	create_viewport();
 }
 
-std::string_view Engine::load_vertex(
-	ID3D11Device* device,
+std::pair<std::unique_ptr<const BYTE[]>, UINT> Engine::load_vertex(
 	ComPtr<ID3D11VertexShader>& vertex_shader,
 	std::wstring_view path) {
 	std::string_view shb = read_all(path);
 	if (shb.empty())
 		throw Error(L"Could not read vertex shader");
+	std::unique_ptr<const BYTE[]> ptr;
+	ptr.reset((const BYTE*)shb.data());
 	check device->CreateVertexShader(
 		shb.data(),
 		shb.size(),
@@ -209,24 +210,57 @@ std::string_view Engine::load_vertex(
 		&vertex_shader
 	);
 
-	return shb;
+	return { std::move(ptr), (UINT)shb.size() };
 }
 
-std::string_view Engine::load_pixel(
-	ID3D11Device* device,
+void Engine::load_pixel(
 	ComPtr<ID3D11PixelShader>& pixel_shader,
 	std::wstring_view path) {
-	std::string_view shb = read_all(L"base_pixel.cso");
+	std::string_view shb = read_all(path);
 	if (shb.empty())
 		throw Error(L"Could not read pixel shader");
+	std::unique_ptr<const BYTE[]> ptr;
+	ptr.reset((const BYTE*)shb.data());
 	check device->CreatePixelShader(
 		shb.data(),
 		shb.size(),
 		nullptr,
 		&pixel_shader
 	);
+}
 
-	return shb;
+void Engine::load_geometry(
+	ComPtr<ID3D11GeometryShader>& pixel_shader,
+	std::wstring_view path,
+	const D3D11_SO_DECLARATION_ENTRY* entrys, UINT num,
+	const UINT* strides, UINT num_strides) {
+	std::string_view shb = read_all(path);
+	if (shb.empty())
+		throw Error(L"Could not read gometry shader");
+	std::unique_ptr<const BYTE[]> ptr;
+	ptr.reset((const BYTE*)shb.data());
+	check device->CreateGeometryShaderWithStreamOutput(
+		shb.data(), shb.size(),
+		entrys, num,
+		strides, num_strides,
+		D3D11_SO_NO_RASTERIZED_STREAM,
+		nullptr,
+		&pixel_shader
+	);
+}
+
+void Engine::load_geometry(ComPtr<ID3D11GeometryShader>& geometry_shader, std::wstring_view path) {
+	std::string_view shb = read_all(path);
+	if (shb.empty())
+		throw Error(L"Could not read geometry shader");
+	std::unique_ptr<const BYTE[]> ptr;
+	ptr.reset((const BYTE*)shb.data());
+	check device->CreateGeometryShader(
+		shb.data(),
+		shb.size(),
+		nullptr,
+		&geometry_shader
+	);
 }
 
 ComPtr<ID3D11Buffer> Engine::create_buffer(
