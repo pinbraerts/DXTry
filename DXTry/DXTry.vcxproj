@@ -132,6 +132,7 @@
     <ClCompile Include="Material.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Object.cpp" />
+    <ClCompile Include="Light.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="SimpleMath.cpp" />
   </ItemGroup>
@@ -145,6 +146,7 @@
     <ClInclude Include="Material.hpp" />
     <ClInclude Include="Mesh.hpp" />
     <ClInclude Include="Object.hpp" />
+    <ClInclude Include="Light.hpp" />
     <ClInclude Include="Scene.hpp" />
     <ClInclude Include="SimpleMath.hpp" />
   </ItemGroup>
