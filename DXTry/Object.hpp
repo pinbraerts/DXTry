@@ -4,10 +4,23 @@
 #include "includes.hpp"
 #include "Error.hpp"
 
-struct ObjectSerial {
+struct MaterialSerial {
 	std::wstring_view vertex_path;
 	std::wstring_view pixel_path;
 	std::vector<D3D11_INPUT_ELEMENT_DESC> descriptors;
+
+	struct Constant {
+		Vector3 ambient;
+		Vector3 diffuse;
+		Vector3 specular;
+		Vector3 shininess;
+	} constant;
+
+	std::wstring_view geometry_path;
+};
+
+struct ObjectSerial {
+	MaterialSerial material;
 	std::vector<float> vertices;
 	std::vector<USHORT> indices;
 
@@ -16,30 +29,31 @@ struct ObjectSerial {
 	UINT offset = 0;
 };
 
-struct Layout {
+struct Material {
 	ComPtr<ID3D11VertexShader> vertex_shader;
+	ComPtr<ID3D11GeometryShader> geometry_shader;
+	//ComPtr<ID3D11Buffer> stream_output;
 	ComPtr<ID3D11PixelShader> pixel_shader;
 	ComPtr<ID3D11InputLayout> input_layout;
 
-	Layout() = default;
-	Layout(const Layout&) = default;
-	Layout(Layout&& other) = default;
-	Layout(
-		ComPtr<ID3D11VertexShader> _vertex_shader,
-		ComPtr<ID3D11PixelShader> _pixel_shader,
-		ComPtr<ID3D11InputLayout> _input_layout
-	);
+	MaterialSerial::Constant material;
 
-	Layout& operator=(Layout&& other) = default;
-	Layout& operator=(const Layout&) = default;
+	Material() = default;
+	Material(Engine& engine, const MaterialSerial& serial);
+
+	void init(Engine& engine, const MaterialSerial& serial);
 };
 
-struct Object: Layout {
+struct Object: Material {
+	// ComPtr
 	ComPtr<ID3D11Buffer> vertex_buffer;
 	ComPtr<ID3D11Buffer> index_buffer;
-	ComPtr<ID3D11Buffer> constant_buffer;
+	ComPtr<ID3D11Buffer> constant_buffers[2];
 
+	// Constants
 	Matrix model;
+
+	// Other stuff
 	UINT n_indices;
 	UINT stride;
 	UINT offset;
@@ -51,8 +65,6 @@ struct Object: Layout {
 	void update(Engine& engine);
 	void render(Engine& engine);
 	// void destroy(Engine& engine);
-
-	static Layout create_layout(Engine& engine, const ObjectSerial& serial);
 };
 
 #endif // !DXTRY_OBJECT_HPP

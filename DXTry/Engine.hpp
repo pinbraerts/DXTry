@@ -14,14 +14,45 @@ struct Engine {
 		UINT message,
 		WPARAM wParam,
 		LPARAM lParam);
-	static std::string_view load_vertex(
-		ID3D11Device* device,
+	std::pair<std::unique_ptr<const BYTE[]>, UINT> load_vertex(
 		ComPtr<ID3D11VertexShader>& vertex_shader,
 		std::wstring_view path
 	);
-	static std::string_view load_pixel(
-		ID3D11Device* device,
+	void load_pixel(
 		ComPtr<ID3D11PixelShader>& pixel_shader,
+		std::wstring_view path
+	);
+	void load_geometry(
+		ComPtr<ID3D11GeometryShader>& geometry_shader,
+		std::wstring_view path,
+		const D3D11_SO_DECLARATION_ENTRY* entrys, UINT num,
+		const UINT* strides, UINT num_strides
+	);
+	void load_geometry(
+		ComPtr<ID3D11GeometryShader>& geometry_shader,
+		std::wstring_view path,
+		std::vector<D3D11_SO_DECLARATION_ENTRY> entrys
+	) {
+		return load_geometry(
+			geometry_shader, path,
+			entrys.data(), (UINT)entrys.size(),
+			nullptr, 0
+		);
+	}
+	void load_geometry(
+		ComPtr<ID3D11GeometryShader>& geometry_shader,
+		std::wstring_view path,
+		std::vector<D3D11_SO_DECLARATION_ENTRY> entrys,
+		std::vector<UINT> strides
+	) {
+		return load_geometry(
+			geometry_shader, path,
+			entrys.data(), (UINT)entrys.size(),
+			strides.data(), (UINT)strides.size()
+		);
+	}
+	void load_geometry(
+		ComPtr<ID3D11GeometryShader>& geometry_shader,
 		std::wstring_view path
 	);
 	ComPtr<ID3D11Buffer> create_buffer(
@@ -46,12 +77,12 @@ struct Engine {
 
 	std::wstring_view class_name = L"Application";
 	std::wstring_view window_title = L"Game";
-	D3D_FEATURE_LEVEL levels[7]{
-		D3D_FEATURE_LEVEL_9_1,
-		D3D_FEATURE_LEVEL_9_2,
-		D3D_FEATURE_LEVEL_9_3,
-		D3D_FEATURE_LEVEL_10_0,
-		D3D_FEATURE_LEVEL_10_1,
+	D3D_FEATURE_LEVEL levels[2] {
+		//D3D_FEATURE_LEVEL_9_1,
+		//D3D_FEATURE_LEVEL_9_2,
+		//D3D_FEATURE_LEVEL_9_3,
+		//D3D_FEATURE_LEVEL_10_0,
+		//D3D_FEATURE_LEVEL_10_1,
 		D3D_FEATURE_LEVEL_11_0,
 		D3D_FEATURE_LEVEL_11_1,
 	};

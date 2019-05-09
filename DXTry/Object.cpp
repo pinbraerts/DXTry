@@ -1,28 +1,16 @@
 #include "Object.hpp"
 #include "Engine.hpp"
 
-Layout::Layout(
-	ComPtr<ID3D11VertexShader> _vertex_shader,
-	ComPtr<ID3D11PixelShader> _pixel_shader,
-	ComPtr<ID3D11InputLayout> _input_layout
-) : vertex_shader(_vertex_shader),
-	pixel_shader(_pixel_shader),
-	input_layout(_input_layout) {}
-
-Object::Object(Engine& engine, const ObjectSerial& serial) :
-	Layout(create_layout(engine, serial)),
-	vertex_buffer(engine.create_buffer(D3D11_BIND_VERTEX_BUFFER, serial.vertices)),
-	index_buffer(engine.create_buffer(D3D11_BIND_INDEX_BUFFER, serial.indices)),
-	model(serial.model),
-	n_indices((UINT)serial.indices.size()),
-	stride(serial.stride),
-	offset(serial.offset) {}
+Object::Object(Engine& engine, const ObjectSerial& serial) {
+	init(engine, serial);
+}
 
 void Object::init(Engine& engine, const ObjectSerial& serial) {
-	Layout::operator=(create_layout(engine, serial));
+	Material::init(engine, serial.material);
 	vertex_buffer = engine.create_buffer(D3D11_BIND_VERTEX_BUFFER, serial.vertices);
 	index_buffer = engine.create_buffer(D3D11_BIND_INDEX_BUFFER, serial.indices);
-	constant_buffer = engine.create_buffer(D3D11_BIND_CONSTANT_BUFFER, sizeof(Matrix));
+	constant_buffers[0] = engine.create_buffer(D3D11_BIND_CONSTANT_BUFFER, sizeof(model));
+	constant_buffers[1] = engine.create_buffer(D3D11_BIND_CONSTANT_BUFFER, sizeof(material));
 	model = serial.model;
 	n_indices = (UINT)serial.indices.size();
 	stride = serial.stride;
@@ -35,39 +23,42 @@ void Object::update(Engine& engine) {
 	if (engine.frames == MAXUINT) engine.frames = 0;
 
 	engine.context->UpdateSubresource(
-		constant_buffer.Get(),
+		constant_buffers[0].Get(),
 		0,
 		nullptr,
 		&model,
 		0,
 		0
 	);
+	engine.context->UpdateSubresource(
+		constant_buffers[1].Get(),
+		0,
+		nullptr,
+		&material,
+		0,
+		0
+	);
 }
 
-Layout Object::create_layout(Engine& engine, const ObjectSerial& serial) {
-	Layout res;
-	std::string_view shb = Engine::load_vertex(
-		engine.device.Get(),
-		res.vertex_shader,
-		serial.vertex_path
-	);
-
+void Material::init(Engine& engine, const MaterialSerial& serial) {
+	auto [data, size] = engine.load_vertex(vertex_shader, serial.vertex_path);
 	check engine.device->CreateInputLayout(
 		serial.descriptors.data(),
 		(UINT)serial.descriptors.size(),
-		shb.data(),
-		shb.size(),
-		&res.input_layout
+		data.get(), size,
+		&input_layout
 	);
 
-	delete[] shb.data();
+	engine.load_pixel(pixel_shader, serial.pixel_path);
 
-	delete[] Engine::load_pixel(
-		engine.device.Get(),
-		res.pixel_shader,
-		serial.pixel_path
-	).data();
-	return res;
+	if (!serial.geometry_path.empty()) {
+		engine.load_geometry(geometry_shader, serial.geometry_path);
+		//stream_output = engine.create_buffer(
+			//D3D11_BIND_STREAM_OUTPUT,
+			//0xfffff);// (sizeof(Vector4) * 2 + sizeof(Vector3) * 2) * 36);
+	}
+
+	material = serial.constant;
 }
 
 void Object::render(Engine& engine) {
@@ -94,10 +85,10 @@ void Object::render(Engine& engine) {
 	rs->Release();*/
 
 	// set correct buffers
-	ID3D11Buffer* constant_buffers[] {
-		constant_buffer.Get()
-	};
-	engine.context->VSSetConstantBuffers(1, (UINT)std::size(constant_buffers), constant_buffers);
+	ID3D11Buffer* vscbs[] = { constant_buffers[0].Get() };
+	engine.context->VSSetConstantBuffers(2, (UINT)std::size(vscbs), vscbs);
+	ID3D11Buffer* pscbs[] = { constant_buffers[1].Get() };
+	engine.context->PSSetConstantBuffers(3, (UINT)std::size(pscbs), pscbs);
 
 	ID3D11Buffer* vertex_buffers[] {
 		vertex_buffer.Get()
@@ -108,6 +99,14 @@ void Object::render(Engine& engine) {
 	engine.context->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	engine.context->IASetInputLayout(input_layout.Get());
 	engine.context->VSSetShader(vertex_shader.Get(), nullptr, 0);
+	if (geometry_shader != nullptr) {
+		//engine.context->GSSetConstantBuffers(2, (UINT)std::size(vscbs), vscbs);
+		engine.context->GSSetShader(geometry_shader.Get(), nullptr, 0);
+	}
 	engine.context->PSSetShader(pixel_shader.Get(), nullptr, 0);
 	engine.context->DrawIndexed(n_indices, 0, 0);
+}
+
+Material::Material(Engine& engine, const MaterialSerial& serial) {
+	init(engine, serial);
 }

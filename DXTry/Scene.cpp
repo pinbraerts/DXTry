@@ -1,30 +1,35 @@
 #include "Scene.hpp"
 #include "Engine.hpp"
 
-void Scene::create_constant_buffer(Engine& engine) {
-	constant_buffer = engine.create_buffer(D3D11_BIND_CONSTANT_BUFFER, sizeof(ConstantBufferStruct));
-}
-
 void Scene::create_cube(Engine& engine) {
 	ObjectSerial serial {
-		L"base_vertex.cso",
-		L"base_pixel.cso",
-		{ // descriptors
-			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,
-				0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{
+			L"light_vertex.cso",
+			L"light_pixel.cso",
+			{ // descriptors
+				{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,
+					0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 
-			{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT,
-				0, sizeof(Vector3), D3D11_INPUT_PER_VERTEX_DATA, 0 },
+				{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT,
+					0, sizeof(Vector3), D3D11_INPUT_PER_VERTEX_DATA, 0 }
+			},
+			{
+				{ 0.0215f, 0.1745f, 0.0215f }, // ambient
+				{ 0.07568f, 0.61424f, 0.07568f }, // diffuse
+				{ 0.633f, 0.727811f, 0.633f }, // specular
+				{ 0.6f, 0.0f, 0.0f } // shininess
+			},
+			L"light_geometry.cso"
 		},
 		{ // vertices
-			-0.5f, -0.5f, -0.5f, 0, 0, 0,
-			-0.5f, -0.5f, 0.5f, 0, 0, 1,
-			-0.5f, 0.5f, -0.5f, 0, 1, 0,
-			-0.5f, 0.5f, 0.5f, 0, 1, 1,
+			-0.5f, -0.5f, -0.5f, 1, 1, 1,
+			-0.5f, -0.5f, 0.5f, 1, 1, 1,
+			-0.5f, 0.5f, -0.5f, 1, 1, 1,
+			-0.5f, 0.5f, 0.5f, 1, 1, 1,
 
-			0.5f, -0.5f, -0.5f, 1, 0, 0,
-			0.5f, -0.5f, 0.5f, 1, 0, 1,
-			0.5f, 0.5f, -0.5f, 1, 1, 0,
+			0.5f, -0.5f, -0.5f, 1, 1, 1,
+			0.5f, -0.5f, 0.5f, 1, 1, 1,
+			0.5f, 0.5f, -0.5f, 1, 1, 1,
 			0.5f, 0.5f, 0.5f, 1, 1, 1,
 		},
 		{ // indices
@@ -67,17 +72,28 @@ void Scene::update(Engine& engine) {
 	camera.position += camera.direction() * mv.x + camera.left() * mv.y;
 
 	// matrices update
-	matrices.view = camera.view();
-	matrices.projection = camera.projection();
+	transform.view = camera.view();
+	transform.projection = camera.projection();
+
+	light.eye = camera.position;
+	light.light_position = Vector3::Transform(Vector3(1, 1, 0), transform.world * transform.view);
 
 	// children update
 	cube.update(engine);
 
 	engine.context->UpdateSubresource(
-		constant_buffer.Get(),
+		constant_buffers[0].Get(),
 		0,
 		nullptr,
-		&matrices,
+		&transform,
+		0,
+		0
+	);
+	engine.context->UpdateSubresource(
+		constant_buffers[1].Get(),
+		0,
+		nullptr,
+		&light,
 		0,
 		0
 	);
@@ -85,10 +101,13 @@ void Scene::update(Engine& engine) {
 
 void Scene::render(Engine& engine) {
 	// set correct buffers
-	ID3D11Buffer* constant_buffers[] {
-		constant_buffer.Get()
+	engine.context->VSSetConstantBuffers(0, (UINT)std::size(constant_buffers), (ID3D11Buffer**)constant_buffers);
+	engine.context->GSSetConstantBuffers(0, (UINT)std::size(constant_buffers), (ID3D11Buffer**)constant_buffers);
+
+	ID3D11Buffer* pscbs[] {
+		constant_buffers[1].Get()
 	};
-	engine.context->VSSetConstantBuffers(0, (UINT)std::size(constant_buffers), constant_buffers);
+	engine.context->PSSetConstantBuffers(1, (UINT)std::size(pscbs), pscbs);
 
 	// render children
 	cube.render(engine);
@@ -96,9 +115,16 @@ void Scene::render(Engine& engine) {
 
 void Scene::init(Engine& engine) {
 	// init fields
-	create_constant_buffer(engine);
+	constant_buffers[0] = engine.create_buffer(D3D11_BIND_CONSTANT_BUFFER, sizeof(transform));
+	constant_buffers[1] = engine.create_buffer(D3D11_BIND_CONSTANT_BUFFER, sizeof(light));
 	camera.aspect_ratio = (float)engine.buffer_desc.Width / (float)engine.buffer_desc.Height;
 
 	// init children
 	create_cube(engine);
+
+	light = {
+		Vector3::Zero,
+		Vector3::Zero,
+		Vector4(1, 1, 1, 1)
+	};
 }
