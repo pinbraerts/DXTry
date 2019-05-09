@@ -160,11 +160,12 @@ void Scene::create_lamp(Engine & engine) {
 		std::make_unique<Material>(std::move(lamp_material)),
 		Matrix()
 	}, {
-		Vector4(5, 5, 5, 1),
-		Vector4::Zero,
-		Vector4(1, 1, 1, 1),
-		Vector4(0.8f, 0.8f, 0.8f, 1),
-		Vector4(1, 1, 1, 1)
+		Vector4(1, 1, 1, 0), // position
+		Vector4::Zero, // eye
+		Vector4(1, 1, 1, 1), // ambient
+		Vector4(0.8f, 0.8f, 0.8f, 1), // diffuse
+		Vector4(1, 1, 1, 1), // specular
+		Vector4(1, 0.09f, 0.032f, 0) // attenuation
 	});
 	lamp.init(engine);
 }

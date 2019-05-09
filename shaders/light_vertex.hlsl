@@ -8,10 +8,11 @@ cbuffer LightConstantBuffer: register(b1) {
 	float4 light_vec;
 	float4 eye;
 
-	float4 light_ambient;
-	float4 light_diffuse;
-	float4 light_specular;
-	float4 _align;
+	float4 _light_ambient;
+	float4 _light_diffuse;
+	float4 _light_specular;
+
+	float4 _light_attenuation;
 };
 
 cbuffer ModelConstantBuffer: register(b2) {
@@ -40,7 +41,7 @@ VS_OUTPUT main(VS_INPUT input) {
 
 	float4 light_dir = mul(float4(light_vec.xyz, 0.0f), world);
 
-	if (light_vec.w < 0.5) { // light is positional
+	if (light_vec.w < 0.5f) { // light is point
 		light_dir -= pos;
 	}
 	output.light_vec = light_dir.xyz;

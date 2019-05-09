@@ -1,11 +1,12 @@
 cbuffer LightConstantBuffer: register(b1) {
-	float3 _light_position;
-	float3 _eye;
+	float4 _light_position;
+	float4 _eye;
 
 	float4 light_ambient;
 	float4 light_diffuse;
 	float4 light_specular;
-	float4 _align;
+
+	float4 att;
 };
 
 cbuffer MaterialConstantBuffer: register(b3) {
@@ -32,6 +33,17 @@ float4 main(PS_INPUT input): SV_TARGET {
 	float4 specular_color = pow(max(dot(R, V), 0.0f), 126 * shininess.x) * specular * light_specular;
 
 	float4 color = ambient_color + diffuse_color + specular_color;
+
+	if (_light_position.w < 0.5f) { // light is point
+		float d = length(input.light_vec);
+		float attenuation = att.x; // constant
+		attenuation += att.y * d; // linear
+		d *= d;
+		attenuation += att.z * d; // quadratic
+		d *= d;
+		attenuation += att.w * d; // cubic
+		color = float4(color.xyz / attenuation, color.w);
+	}
 
 	return color;
 }
