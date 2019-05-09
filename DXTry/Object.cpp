@@ -12,8 +12,10 @@ Object::Object(Engine& engine, ObjectData&& data) : ObjectData(std::move(data)) 
 }
 
 void Object::init(Engine& engine) {
-	material->init(engine);
-	mesh->init(engine);
+	if(material != nullptr)
+		material->init(engine);
+	if(mesh != nullptr)
+		mesh->init(engine);
 	constant_buffer = engine.create_buffer(D3D11_BIND_CONSTANT_BUFFER, sizeof(model));
 }
 
@@ -70,6 +72,8 @@ void Object::render(Engine& engine) {
 	};
 	engine.context->VSSetConstantBuffers(2, (UINT)std::size(vscbs), vscbs);
 
-	material->render(engine);
-	mesh->render(engine);
+	if(material != nullptr)
+		material->render(engine);
+	if(mesh != nullptr)
+		mesh->render(engine);
 }
