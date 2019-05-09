@@ -41,11 +41,11 @@ VS_OUTPUT main(VS_INPUT input) {
 	// Just pass through the color data
 	output.color = float4(input.color, 1.0f);
 
-	float4 out_vec = mul(pos, mwv) - float4(eye, 0.0f);
+	float4 out_vec = mul(pos, mw) - mul(float4(eye, 0.0f), world);
 	//out_vec = mul(out_vec, view);
 	output.out_vec = out_vec.xyz;
 
-	float4 light_dir = mul(float4(light_vec, 0.0f), wv);
+	float4 light_dir = mul(float4(light_vec, 0.0f), world) - mul(pos, mw);
 	//light_vec = mul(light_vec, view);
 	output.light_vec = light_dir.xyz;
 

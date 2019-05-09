@@ -5,10 +5,10 @@ cbuffer LightConstantBuffer: register(b1) {
 };
 
 cbuffer MaterialConstantBuffer: register(b3) {
-	float3 ambient;
-	float3 diffuse;
-	float3 specular;
-	float3 shininess;
+	float4 ambient;
+	float4 diffuse;
+	float4 specular;
+	float4 shininess;
 };
 
 struct PS_INPUT {
@@ -24,12 +24,12 @@ float4 main(PS_INPUT input): SV_TARGET {
 	float3 V = normalize(input.out_vec);
 	float3 R = normalize(reflect(-L, input.normal));
 
-	float4 ambient_color = float4(ambient, 1.0f) * light_color;
-	float4 diffuse_color = max(dot(input.normal, L), 0.0f) * float4(diffuse, 1.0f) * light_color;
-	float4 specular_color = pow(max(dot(R, V), 0.0f), shininess.x) * float4(specular, 1.0f) * light_color;
+	float4 ambient_color = ambient;
+	float4 diffuse_color = max(dot(input.normal, L), 0.0f) * diffuse;
+	float4 specular_color = pow(max(dot(R, V), 0.0f), shininess.x) * specular;
 
 	float4 color = ambient_color + diffuse_color + specular_color;
 
 	//return float4(input.out_vec, 1.0f);
-	return color * input.color;
+	return color * input.color * light_color;
 }

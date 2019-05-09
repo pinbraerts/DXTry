@@ -24,11 +24,11 @@ void main(
 	triangle GS_INPUT input[3], 
 	inout TriangleStream<GS_OUTPUT> output
 ) {
-	float4	a = input[1].position - input[0].position,
-			b = input[2].position - input[0].position;
+	float3	a = (input[1].position - input[0].position).xyz,
+			b = (input[2].position - input[0].position).xyz;
 	float4 n4 = float4(normalize(cross(a, b)), 0.0f);
 	n4 = mul(world, n4);
-	n4 = mul(view, n4);
+	//n4 = mul(view, n4);
 	float3 n3 = n4.xyz;
 
 	for (uint i = 0; i < 3; i++) {
