@@ -60,6 +60,9 @@
   <ItemGroup>
     <FxCompile Include="..\shaders\base_pixel.hlsl" />
     <FxCompile Include="..\shaders\base_vertex.hlsl" />
+    <FxCompile Include="light_geometry.hlsl" />
+    <FxCompile Include="light_vertex.hlsl" />
+    <FxCompile Include="light_pixel.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="SimpleMath.inl">
