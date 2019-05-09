@@ -65,6 +65,7 @@ void Scene::update(Engine& engine) {
 	// camera rotation
 	camera.yaw = -engine.input.mouse.position.x * engine.sensivity;
 	camera.pitch = engine.input.mouse.position.y * engine.sensivity;
+	camera.FOV = engine.input.mouse.scroll / 100 +  70;
 
 	// camera movement
 	Vector2 mv {

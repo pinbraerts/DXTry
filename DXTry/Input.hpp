@@ -70,7 +70,6 @@ struct Input {
 			if(ms.usFlags | MOUSE_MOVE_ABSOLUTE) {
 				mouse.delta = newpos;
 				mouse.position += mouse.delta;
-				break;
 			}
 
 			if (ms.usButtonFlags | RI_MOUSE_LEFT_BUTTON_DOWN) {
@@ -118,8 +117,8 @@ struct Input {
 				mouse._pressed[Mouse::Button::Back] = 0;
 			}
 			if (ms.usButtonFlags | RI_MOUSE_WHEEL) {
-				mouse.scroll_delta = ms.usButtonData - mouse.scroll;
-				mouse.scroll = ms.usButtonData;
+				mouse.scroll_delta = (SHORT)ms.usButtonData;
+				mouse.scroll += mouse.scroll_delta;
 			}
 		}
 			break;
