@@ -31,7 +31,7 @@ void Mesh::init(Engine& engine) {
 void Mesh::update(Engine& engine) { }
 
 void Mesh::render(Engine& engine) {
-	ID3D11Buffer* vertex_buffers[]{
+	ID3D11Buffer* vertex_buffers[] {
 		vertex_buffer.Get()
 	};
 	engine.context->IASetVertexBuffers(0, (UINT)std::size(vertex_buffers), vertex_buffers, &stride, &offset);
@@ -39,7 +39,6 @@ void Mesh::render(Engine& engine) {
 	engine.context->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	engine.context->IASetInputLayout(input_layout.Get());
 	engine.context->VSSetShader(vertex_shader.Get(), nullptr, 0);
-	if (geometry_shader != nullptr)
-		engine.context->GSSetShader(geometry_shader.Get(), nullptr, 0);
+	engine.context->GSSetShader(geometry_shader.Get(), nullptr, 0);
 	engine.context->DrawIndexed((UINT)indices.size(), 0, 0);
 }
