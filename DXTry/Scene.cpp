@@ -3,7 +3,7 @@
 
 void Scene::create_cubes(Engine& engine) {
 	MaterialData cube_material {
-		L"light_pixel.cso",
+		L"base_texture_pixel.cso", L"wall.png",
 		{
 			{ 0.0215f, 0.1745f, 0.0215f, 1.0f }, // ambient
 			{ 0.07568f, 0.61424f, 0.07568f, 1.0f }, // diffuse
@@ -12,43 +12,83 @@ void Scene::create_cubes(Engine& engine) {
 		}
 	};
 	MeshData cube_mesh {
-		L"light_vertex.cso",
-		L"light_geometry.cso",
+		L"base_texture_vertex.cso", L"",
 		{ // descriptors
 			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,
-				0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+				0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+
+			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,
+				0, sizeof(Vector3), D3D11_INPUT_PER_VERTEX_DATA, 0 }
 		},
 		{ // vertices
-			-0.5f, -0.5f, -0.5f,
-			-0.5f, -0.5f, 0.5f,
-			-0.5f, 0.5f, -0.5f,
-			-0.5f, 0.5f, 0.5f,
+			-0.5f, -0.5f, -0.5f, 0, 0, // 0
+			-0.5f, 0.5f, -0.5f, 1, 0, // 2
+			-0.5f, -0.5f, 0.5f, 0, 1, // 1
 
-			0.5f, -0.5f, -0.5f,
-			0.5f, -0.5f, 0.5f,
-			0.5f, 0.5f, -0.5f,
-			0.5f, 0.5f, 0.5f,
+			-0.5f, -0.5f, 0.5f, 0, 1, // 1
+			-0.5f, 0.5f, -0.5f, 1, 0, // 2
+			-0.5f, 0.5f, 0.5f, 1, 1, // 3
+
+			0.5f, -0.5f, -0.5f, 0, 0, // 4
+			0.5f, -0.5f, 0.5f, 0, 1, // 5
+			0.5f, 0.5f, -0.5f, 1, 0, // 6
+
+			0.5f, -0.5f, 0.5f, 0, 1, // 5
+			0.5f, 0.5f, 0.5f, 1, 1, // 7
+			0.5f, 0.5f, -0.5f, 1, 0, // 6
+
+			-0.5f, -0.5f, -0.5f, 1, 0, // 0
+			-0.5f, -0.5f, 0.5f, 0, 0, // 1
+			0.5f, -0.5f, 0.5f, 0, 1, // 5
+
+			-0.5f, -0.5f, -0.5f, 1, 0, // 0
+			0.5f, -0.5f, 0.5f, 0, 1, // 5
+			0.5f, -0.5f, -0.5f, 1, 1, // 4
+
+			-0.5f, 0.5f, -0.5f, 1, 0, // 2
+			0.5f, 0.5f, -0.5f, 1, 1, // 6
+			0.5f, 0.5f, 0.5f, 0, 1, // 7
+
+			-0.5f, 0.5f, -0.5f, 1, 0, // 2
+			0.5f, 0.5f, 0.5f, 0, 1, // 7
+			-0.5f, 0.5f, 0.5f, 0, 0, // 3
+
+			-0.5f, -0.5f, -0.5f, 0, 1, // 0
+			0.5f, -0.5f, -0.5f, 0, 0, // 4
+			0.5f, 0.5f, -0.5f, 1, 0, // 6
+
+			-0.5f, -0.5f, -0.5f, 0, 1, // 0
+			0.5f, 0.5f, -0.5f, 1, 0, // 6
+			-0.5f, 0.5f, -0.5f, 1, 1, // 2
+
+			-0.5f, -0.5f, 0.5f, 0, 1, // 1
+			-0.5f, 0.5f, 0.5f, 1, 1, // 3
+			0.5f, 0.5f, 0.5f, 1, 0, // 7
+
+			-0.5f, -0.5f, 0.5f, 0, 1, // 1
+			0.5f, 0.5f, 0.5f, 1, 0, // 7
+			0.5f, -0.5f, 0.5f, 0, 0, // 5
 		},
 		{ // indices
-			0, 2, 1, // -x
-			1, 2, 3,
+			//0, 2, 1, // -x
+			//1, 2, 3,
 
-			4, 5, 6, // +x
-			5, 7, 6,
+			//4, 5, 6, // +x
+			//5, 7, 6,
 
-			0, 1, 5, // -y
-			0, 5, 4,
+			//0, 1, 5, // -y
+			//0, 5, 4,
 
-			2, 6, 7, // +y
-			2, 7, 3,
+			//2, 6, 7, // +y
+			//2, 7, 3,
 
-			0, 4, 6, // -z
-			0, 6, 2,
+			//0, 4, 6, // -z
+			//0, 6, 2,
 
-			1, 3, 7, // +z
-			1, 7, 5
+			//1, 3, 7, // +z
+			//1, 7, 5
 		},
-		sizeof(Vector3) * 1
+		sizeof(Vector3) + sizeof(Vector2)
 	};
 	cubes.emplace_back(engine, ObjectData {
 		std::make_shared<Mesh>(std::move(cube_mesh)),
