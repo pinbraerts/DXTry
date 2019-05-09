@@ -14,7 +14,7 @@ int APIENTRY _tWinMain(
 	app.run();
 #ifndef _DEBUG
 	}
-	catch (const Engine::Error& e) {
+	catch (const Error& e) {
 		std::wcerr << e.msg << std::endl;
 	}
 #endif // !_DEBUG

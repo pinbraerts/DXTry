@@ -108,6 +108,16 @@ void Engine::create_d3dcontext() {
 	check device.As(&debug);
 }
 
+void Engine::create_imaging() {
+	check CoCreateInstance(
+		CLSID_WICImagingFactory,
+		nullptr,
+		CLSCTX_INPROC_SERVER,
+		__uuidof(IWICImagingFactory),
+		(LPVOID*)&imaging
+	);
+}
+
 void Engine::create_swap_chain() {
 	DXGI_SWAP_CHAIN_DESC desc;
 	ZeroMemory(&desc, sizeof(DXGI_SWAP_CHAIN_DESC));
@@ -214,9 +224,9 @@ std::pair<std::unique_ptr<const BYTE[]>, UINT> Engine::load_vertex(
 	return { std::move(ptr), (UINT)shb.size() };
 }
 
-void Engine::load_pixel(
-	ComPtr<ID3D11PixelShader>& pixel_shader,
+ComPtr<ID3D11PixelShader> Engine::load_pixel(
 	std::wstring_view path) {
+	ComPtr<ID3D11PixelShader> res;
 	std::string_view shb = read_all(path);
 	if (shb.empty())
 		throw Error(L"Could not read pixel shader");
@@ -226,15 +236,16 @@ void Engine::load_pixel(
 		shb.data(),
 		shb.size(),
 		nullptr,
-		&pixel_shader
+		&res
 	);
+	return res;
 }
 
-void Engine::load_geometry(
-	ComPtr<ID3D11GeometryShader>& pixel_shader,
+ComPtr<ID3D11GeometryShader> Engine::load_geometry(
 	std::wstring_view path,
 	const D3D11_SO_DECLARATION_ENTRY* entrys, UINT num,
 	const UINT* strides, UINT num_strides) {
+	ComPtr<ID3D11GeometryShader> res;
 	std::string_view shb = read_all(path);
 	if (shb.empty())
 		throw Error(L"Could not read gometry shader");
@@ -246,11 +257,13 @@ void Engine::load_geometry(
 		strides, num_strides,
 		D3D11_SO_NO_RASTERIZED_STREAM,
 		nullptr,
-		&pixel_shader
+		&res
 	);
+	return res;
 }
 
-void Engine::load_geometry(ComPtr<ID3D11GeometryShader>& geometry_shader, std::wstring_view path) {
+ComPtr<ID3D11GeometryShader> Engine::load_geometry(std::wstring_view path) {
+	ComPtr<ID3D11GeometryShader> res;
 	std::string_view shb = read_all(path);
 	if (shb.empty())
 		throw Error(L"Could not read geometry shader");
@@ -260,8 +273,9 @@ void Engine::load_geometry(ComPtr<ID3D11GeometryShader>& geometry_shader, std::w
 		shb.data(),
 		shb.size(),
 		nullptr,
-		&geometry_shader
+		&res
 	);
+	return res;
 }
 
 ComPtr<ID3D11Buffer> Engine::create_buffer(
@@ -297,6 +311,103 @@ ComPtr<ID3D11Buffer> Engine::create_buffer(D3D11_BIND_FLAG flag, UINT size) {
 		&res
 	);
 	return res;
+}
+
+std::pair<ComPtr<ID3D11Texture2D>, ComPtr<ID3D11ShaderResourceView>> Engine::create_texture(std::wstring_view path, UINT maxsize) {
+	ImageBuilder builder(path, imaging.Get());
+
+	if (maxsize == 0) {
+		// This is a bit conservative because the hardware could support larger textures than
+		// the Feature Level defined minimums, but doing it this way is much easier and more
+		// performant for WIC than the 'fail and retry' model used by DDSTextureLoader
+
+		switch (feature_level)
+		{
+		case D3D_FEATURE_LEVEL_9_1:
+		case D3D_FEATURE_LEVEL_9_2:
+			maxsize = D3D_FL9_1_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+			break;
+
+		case D3D_FEATURE_LEVEL_9_3:
+			maxsize = D3D_FL9_3_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+			break;
+
+		case D3D_FEATURE_LEVEL_10_0:
+		case D3D_FEATURE_LEVEL_10_1:
+			maxsize = D3D10_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+			break;
+
+		default:
+			maxsize = D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+			break;
+		}
+	}
+
+	auto [ format, used_wic ] = WIC2DXGI(builder.format());
+	if (format == DXGI_FORMAT_UNKNOWN)
+		throw Error(HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED));
+
+	// Verify our target format is supported by the current device
+	// (handles WDDM 1.0 or WDDM 1.1 device driver cases as well as DirectX 11.0 Runtime without 16bpp format support)
+	UINT support = 0;
+	HRESULT hr = device->CheckFormatSupport(format, &support);
+	if (FAILED(hr) || !(support & D3D11_FORMAT_SUPPORT_TEXTURE2D)) {
+		// Fallback to RGBA 32-bit format which is supported by all devices
+		used_wic = GUID_WICPixelFormat32bppRGBA;
+		format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	}
+	// Allocate temporary memory for image
+	auto [ width, height ] = builder.clamp(maxsize);
+	auto [ rowPitch, imageSize ] = builder.pitch();
+
+	builder.convert(used_wic);
+	std::unique_ptr<const BYTE[]> temp = builder.copy();
+
+	// See if format is supported for auto-gen mipmaps (varies by feature level)
+	bool autogen = false;
+	UINT fmtSupport = 0;
+	hr = device->CheckFormatSupport(format, &fmtSupport);
+	if (SUCCEEDED(hr) && (fmtSupport & D3D11_FORMAT_SUPPORT_MIP_AUTOGEN))
+		autogen = true;
+
+	// Create texture
+	D3D11_TEXTURE2D_DESC desc;
+	desc.Width = width;
+	desc.Height = height;
+	desc.MipLevels = (autogen) ? 0 : 1;
+	desc.ArraySize = 1;
+	desc.Format = format;
+	desc.SampleDesc.Count = 1;
+	desc.SampleDesc.Quality = 0;
+	desc.Usage = D3D11_USAGE_DEFAULT;
+	desc.BindFlags = (autogen) ? (D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET) : (D3D11_BIND_SHADER_RESOURCE);
+	desc.CPUAccessFlags = 0;
+	desc.MiscFlags = (autogen) ? D3D11_RESOURCE_MISC_GENERATE_MIPS : 0;
+
+	D3D11_SUBRESOURCE_DATA initData;
+	initData.pSysMem = temp.get();
+	initData.SysMemPitch = static_cast<UINT>(rowPitch);
+	initData.SysMemSlicePitch = static_cast<UINT>(imageSize);
+
+
+	ComPtr<ID3D11Texture2D> texture;
+	ComPtr<ID3D11ShaderResourceView> view;
+	
+	check device->CreateTexture2D(&desc, (autogen) ? nullptr : &initData, &texture);
+	D3D11_SHADER_RESOURCE_VIEW_DESC SRVDesc;
+	memset(&SRVDesc, 0, sizeof(SRVDesc));
+	SRVDesc.Format = format;
+	SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	SRVDesc.Texture2D.MipLevels = (autogen) ? -1 : 1;
+
+	check device->CreateShaderResourceView(texture.Get(), &SRVDesc, &view);
+
+	if (autogen) {
+		context->UpdateSubresource(texture.Get(), 0, nullptr, temp.get(), static_cast<UINT>(rowPitch), static_cast<UINT>(imageSize));
+		context->GenerateMips(view.Get());
+	}
+
+	return { texture, view };
 }
 
 void Engine::run() {
@@ -339,10 +450,14 @@ void Engine::init() {
 	register_class();
 	create_window();
 	register_raw_input();
+	CoInitialize(nullptr);
 
 	// directx settings
 	create_d3dcontext();
 	create_window_resources();
+
+	// other factories
+	create_imaging();
 
 	// init scene
 	scene.init(*this);
@@ -387,4 +502,9 @@ void Engine::render() {
 
 	end = std::chrono::high_resolution_clock::now();
 	delta_time = std::chrono::duration<float>(end - start).count();
+}
+
+Engine::~Engine() {
+	imaging.Reset();
+	CoUninitialize();
 }

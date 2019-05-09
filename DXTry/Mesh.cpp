@@ -22,23 +22,32 @@ void Mesh::init(Engine& engine) {
 	);
 
 	if (!geometry_path.empty())
-		engine.load_geometry(geometry_shader, geometry_path);
+		geometry_shader = engine.load_geometry(geometry_path);
 
-	vertex_buffer = engine.create_buffer(D3D11_BIND_VERTEX_BUFFER, vertices);
-	index_buffer = engine.create_buffer(D3D11_BIND_INDEX_BUFFER, indices);
+	if(!vertices.empty())
+		vertex_buffer = engine.create_buffer(D3D11_BIND_VERTEX_BUFFER, vertices);
+
+	if(!indices.empty())
+		index_buffer = engine.create_buffer(D3D11_BIND_INDEX_BUFFER, indices);
 }
 
 void Mesh::update(Engine& engine) { }
 
 void Mesh::render(Engine& engine) {
-	ID3D11Buffer* vertex_buffers[] {
+	ID3D11Buffer* vbuffers[] {
 		vertex_buffer.Get()
 	};
-	engine.context->IASetVertexBuffers(0, (UINT)std::size(vertex_buffers), vertex_buffers, &stride, &offset);
-	engine.context->IASetIndexBuffer(index_buffer.Get(), DXGI_FORMAT_R16_UINT, 0);
+	engine.context->IASetVertexBuffers(0, (UINT)std::size(vbuffers), vbuffers, &stride, &offset);
+
 	engine.context->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	engine.context->IASetInputLayout(input_layout.Get());
 	engine.context->VSSetShader(vertex_shader.Get(), nullptr, 0);
 	engine.context->GSSetShader(geometry_shader.Get(), nullptr, 0);
-	engine.context->DrawIndexed((UINT)indices.size(), 0, 0);
+	if (index_buffer != nullptr) {
+		engine.context->IASetIndexBuffer(index_buffer.Get(), DXGI_FORMAT_R16_UINT, 0);
+		engine.context->DrawIndexed((UINT)indices.size(), 0, 0);
+	}
+	else {
+		engine.context->Draw(sizeof(float) * (UINT)vertices.size() / stride, 0);
+	}
 }
