@@ -22,6 +22,7 @@ VS_OUTPUT main(VS_INPUT input) {
 
 	float4 pos = float4(input.position, 1.0f);
 	pos = mul(pos, model);
+	pos = mul(pos, world);
 	output.pos_world = pos.xyz;
 
 	pos = mul(pos, world);
