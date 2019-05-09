@@ -60,7 +60,6 @@ void Object::render(Engine& engine) {
 		constant_buffer.Get()
 	};
 	engine.context->VSSetConstantBuffers(2, (UINT)std::size(vscbs), vscbs);
-	engine.context->GSSetConstantBuffers(2, (UINT)std::size(vscbs), vscbs);
 
 	material->render(engine);
 	mesh->render(engine);

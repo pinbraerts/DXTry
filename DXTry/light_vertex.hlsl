@@ -30,10 +30,10 @@ VS_OUTPUT main(VS_INPUT input) {
 	VS_OUTPUT output;
 
 	float4 pos = float4(input.position, 1.0f);
+
+	pos = mul(pos, model);
 	output.position = pos;
 
-	// Transform the position from object space to homogeneous projection space
-	pos = mul(pos, model);
 	pos = mul(pos, world);
 
 	// Just pass through the color data
