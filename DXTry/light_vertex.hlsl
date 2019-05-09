@@ -31,23 +31,21 @@ VS_OUTPUT main(VS_INPUT input) {
 
 	float4 pos = float4(input.position, 1.0f);
 
-	// Transform the position from object space to homogeneous projection space
-	matrix mw = mul(model, world);
-	matrix wv = mul(world, view);
-	matrix mwv = mul(model, wv);
-	matrix mwvp = mul(mwv, projection);
-	output.position = mul(pos, mwvp);
+	pos = mul(pos, model);
+	output.position = pos;
+
+	pos = mul(pos, world);
 
 	// Just pass through the color data
 	output.color = float4(input.color, 1.0f);
 
-	float4 out_vec = mul(pos, mwv) - float4(eye, 0.0f);
-	//out_vec = mul(out_vec, view);
-	output.out_vec = out_vec.xyz;
-
-	float4 light_dir = mul(float4(light_vec, 0.0f), wv);
+	float4 light_dir = mul(float4(light_vec, 0.0f), world) - pos;
 	//light_vec = mul(light_vec, view);
 	output.light_vec = light_dir.xyz;
+
+	float4 out_vec = pos - mul(float4(eye, 0.0f), world);
+	//out_vec = mul(out_vec, view);
+	output.out_vec = out_vec.xyz;
 
 	return output;
 }

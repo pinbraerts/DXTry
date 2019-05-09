@@ -24,20 +24,20 @@ void main(
 	triangle GS_INPUT input[3], 
 	inout TriangleStream<GS_OUTPUT> output
 ) {
-	float4	a = input[1].position - input[0].position,
-			b = input[2].position - input[0].position;
-	float4 n4 = float4(normalize(cross(a, b)), 0.0f);
-	n4 = mul(world, n4);
-	n4 = mul(view, n4);
-	float3 n3 = n4.xyz;
+	float3	a = (input[1].position - input[0].position).xyz,
+			b = (input[2].position - input[0].position).xyz;
+	float3 n = normalize(cross(b, a));
+
+	matrix wvp = mul(world, view);
+	wvp = mul(wvp, projection);
 
 	for (uint i = 0; i < 3; i++) {
 		GS_OUTPUT element;
-		element.position = input[i].position;
+		element.position = mul(input[i].position, wvp);
 		element.color = input[i].color;
 		element.out_vec = input[i].out_vec;
 		element.light_vec = input[i].light_vec;
-		element.normal = n3;
+		element.normal = n;
 		output.Append(element);
 	}
 }
