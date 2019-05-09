@@ -129,6 +129,8 @@
   <ItemGroup>
     <ClCompile Include="Engine.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Material.cpp" />
+    <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Object.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="SimpleMath.cpp" />
@@ -139,6 +141,9 @@
     <ClInclude Include="Error.hpp" />
     <ClInclude Include="includes.hpp" />
     <ClInclude Include="Input.hpp" />
+    <ClInclude Include="IObject.hpp" />
+    <ClInclude Include="Material.hpp" />
+    <ClInclude Include="Mesh.hpp" />
     <ClInclude Include="Object.hpp" />
     <ClInclude Include="Scene.hpp" />
     <ClInclude Include="SimpleMath.hpp" />
