@@ -80,10 +80,10 @@ void Scene::update(Engine& engine) {
 	transform.projection = camera.projection();
 
 	light.eye = camera.position;
-	light.light_position = Vector3(1, 1, 0);
 
 	// children update
 	cube.update(engine);
+	lamp.update(engine);
 
 	engine.context->UpdateSubresource(
 		constant_buffers[0].Get(),
@@ -115,6 +115,60 @@ void Scene::render(Engine& engine) {
 
 	// render children
 	cube.render(engine);
+	lamp.render(engine);
+}
+
+void Scene::create_lamp(Engine & engine) {
+	MaterialData lamp_material {
+		L"base_pixel.cso"
+	};
+	MeshData lamp_mesh {
+		L"base_vertex.cso", L"",
+		{ // descriptors
+			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,
+				0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+
+			{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT,
+				0, sizeof(Vector3), D3D11_INPUT_PER_VERTEX_DATA, 0 }
+		},
+		{ // vertices
+			-0.5f, -0.5f, -0.5f, 1, 1, 1,
+			-0.5f, -0.5f, 0.5f, 1, 1, 1,
+			-0.5f, 0.5f, -0.5f, 1, 1, 1,
+			-0.5f, 0.5f, 0.5f, 1, 1, 1,
+
+			0.5f, -0.5f, -0.5f, 1, 1, 1,
+			0.5f, -0.5f, 0.5f, 1, 1, 1,
+			0.5f, 0.5f, -0.5f, 1, 1, 1,
+			0.5f, 0.5f, 0.5f, 1, 1, 1,
+		},
+		{ // indices
+			0, 2, 1, // -x
+			1, 2, 3,
+
+			4, 5, 6, // +x
+			5, 7, 6,
+
+			0, 1, 5, // -y
+			0, 5, 4,
+
+			2, 6, 7, // +y
+			2, 7, 3,
+
+			0, 4, 6, // -z
+			0, 6, 2,
+
+			1, 3, 7, // +z
+			1, 7, 5
+		},
+		4 * 6
+	};
+	lamp.set({
+		std::make_unique<Mesh>(std::move(lamp_mesh)),
+		std::make_unique<Material>(std::move(lamp_material)),
+		Matrix()
+	});
+	lamp.init(engine);
 }
 
 void Scene::init(Engine& engine) {
@@ -123,12 +177,13 @@ void Scene::init(Engine& engine) {
 	constant_buffers[1] = engine.create_buffer(D3D11_BIND_CONSTANT_BUFFER, sizeof(light));
 	camera.aspect_ratio = (float)engine.buffer_desc.Width / (float)engine.buffer_desc.Height;
 
-	// init children
-	create_cube(engine);
-
 	light = {
-		Vector3::Zero,
+		Vector3(5, 5, 5),
 		Vector3::Zero,
 		Vector4(1, 1, 1, 1)
 	};
+
+	// init children
+	create_cube(engine);
+	create_lamp(engine);
 }

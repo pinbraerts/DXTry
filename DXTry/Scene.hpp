@@ -13,10 +13,10 @@ struct Scene: IObject {
 	} transform;
 
 	struct {
-		Vector3 light_position;
+		Vector3 position;
 		Vector3 eye;
-		Vector4 light_color;
-		Vector2 _;
+		Vector4 color;
+		Vector2 _align;
 	} light;
 
 	ComPtr<ID3D11Buffer> constant_buffers[2];
@@ -24,6 +24,9 @@ struct Scene: IObject {
 
 	Object cube;
 	void create_cube(Engine& engine);
+
+	Object lamp;
+	void create_lamp(Engine& engine);
 
 	void init(Engine& engine) override;
 	void update(Engine& engine) override;
