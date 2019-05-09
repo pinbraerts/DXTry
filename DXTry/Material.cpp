@@ -13,16 +13,20 @@ void Material::set(MaterialData && data) {
 
 void Material::init(Engine& engine) {
 	pixel_shader = engine.load_pixel(pixel_path);
-	if (light.diffuse != Vector4::Zero ||
-		light.ambient != Vector4::Zero ||
-		light.specular != Vector4::Zero ||
-		light.shininess != Vector4::Zero)
-		constant_buffer = engine.create_buffer(D3D11_BIND_CONSTANT_BUFFER, &light, sizeof(light));
 
-	if (!texture_path.empty()) {
-		auto [ x, y ] = engine.create_texture(texture_path);
-		texture = std::move(x);
-		texture_view = std::move(y);
+	UINT sz = sizeof(light);
+	if (light.ambient != Vector4::Zero)
+		sz += sizeof(LightConstant2);
+	else if(!path.diffuse.empty()) {
+		auto [ x, y ] = engine.create_texture(path.diffuse);
+		textures[0] = std::move(x);
+		views[0] = std::move(y);
+
+		if (!path.specular.empty()) {
+			auto[x, y] = engine.create_texture(path.diffuse);
+			textures[1] = std::move(x);
+			views[1] = std::move(y);
+		}
 
 		D3D11_SAMPLER_DESC desc {
 			D3D11_FILTER_MIN_MAG_MIP_LINEAR,
@@ -38,6 +42,7 @@ void Material::init(Engine& engine) {
 		};
 		check engine.device->CreateSamplerState(&desc, &sampler);
 	}
+	constant_buffer = engine.create_buffer(D3D11_BIND_CONSTANT_BUFFER, &light, sz);
 }
 
 void Material::update(Engine& engine) { }
@@ -47,11 +52,8 @@ void Material::render(Engine& engine) {
 		ID3D11Buffer* pscbs[] = { constant_buffer.Get() };
 		engine.context->PSSetConstantBuffers(3, (UINT)std::size(pscbs), pscbs);
 	}
-	if (texture != nullptr) {
-		ID3D11ShaderResourceView* views[]{
-			texture_view.Get()
-		};
-		engine.context->PSSetShaderResources(0, (UINT)std::size(views), views);
+	if (textures[0] != nullptr) {
+		engine.context->PSSetShaderResources(0, (UINT)std::size(views), (ID3D11ShaderResourceView**)views);
 
 		ID3D11SamplerState* samplers[]{
 			sampler.Get()

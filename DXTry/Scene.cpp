@@ -3,16 +3,18 @@
 
 void Scene::create_cubes(Engine& engine) {
 	MaterialData cube_material {
-		L"base_texture_pixel.cso", L"wall.png",
+		L"light_texture_pixel.cso",
 		{
-			{ 0.0215f, 0.1745f, 0.0215f, 1.0f }, // ambient
-			{ 0.07568f, 0.61424f, 0.07568f, 1.0f }, // diffuse
-			{ 0.633f, 0.727811f, 0.633f, 1.0f }, // specular
-			{ 0.6f, 0.0f, 0.0f, 0.0f } // shininess
+			Vector4::Zero, // ambient
+			{ 0.1f, 0.0f, 0.0f, 0.0f }, // shininess
 		}
 	};
+	cube_material.path = {
+		L"container2.png", // diffuse
+		L"container2_specular.png", // specular
+	};
 	MeshData cube_mesh {
-		L"base_texture_vertex.cso", L"",
+		L"light_texture_vertex.cso", L"light_texture_geometry.cso",
 		{ // descriptors
 			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,
 				0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
