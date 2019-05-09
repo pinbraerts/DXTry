@@ -112,6 +112,15 @@
     <FxCompile Include="..\shaders\base_texture_vertex.hlsl">
       <Filter>Шейдеры</Filter>
     </FxCompile>
+    <FxCompile Include="..\shaders\light_texture_vertex.hlsl">
+      <Filter>Шейдеры</Filter>
+    </FxCompile>
+    <FxCompile Include="..\shaders\light_texture_geometry.hlsl">
+      <Filter>Шейдеры</Filter>
+    </FxCompile>
+    <FxCompile Include="..\shaders\light_texture_pixel.hlsl">
+      <Filter>Шейдеры</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="SimpleMath.inl">
@@ -120,6 +129,12 @@
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="wall.png">
+      <Filter>Файлы ресурсов</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="container2_specular.png">
+      <Filter>Файлы ресурсов</Filter>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="container2.png">
       <Filter>Файлы ресурсов</Filter>
     </CopyFileToFolders>
   </ItemGroup>
