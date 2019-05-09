@@ -2,35 +2,35 @@
 #include "Engine.hpp"
 
 void Scene::create_cube(Engine& engine) {
-	ObjectSerial serial {
+	MaterialData cube_material {
+		L"light_pixel.cso",
 		{
-			L"light_vertex.cso",
-			L"light_pixel.cso",
-			{ // descriptors
-				{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,
-					0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ 0.0215f, 0.1745f, 0.0215f, 1.0f }, // ambient
+			{ 0.07568f, 0.61424f, 0.07568f, 1.0f }, // diffuse
+			{ 0.633f, 0.727811f, 0.633f, 1.0f }, // specular
+			{ 0.6f, 0.0f, 0.0f, 0.0f } // shininess
+		}
+	};
+	MeshData cube_mesh {
+		L"light_vertex.cso",
+		L"light_geometry.cso",
+		{ // descriptors
+			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,
+				0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 
-				{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT,
-					0, sizeof(Vector3), D3D11_INPUT_PER_VERTEX_DATA, 0 }
-			},
-			{
-				{ 0.0215f, 0.1745f, 0.0215f }, // ambient
-				{ 0.07568f, 0.61424f, 0.07568f }, // diffuse
-				{ 0.633f, 0.727811f, 0.633f }, // specular
-				{ 0.6f, 0.0f, 0.0f } // shininess
-			},
-			L"light_geometry.cso"
+			{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT,
+				0, sizeof(Vector3), D3D11_INPUT_PER_VERTEX_DATA, 0 }
 		},
 		{ // vertices
-			-0.5f, -0.5f, -0.5f, 1, 1, 1,
-			-0.5f, -0.5f, 0.5f, 1, 1, 1,
-			-0.5f, 0.5f, -0.5f, 1, 1, 1,
-			-0.5f, 0.5f, 0.5f, 1, 1, 1,
+			-0.5f, -0.5f, -0.5f, 0, 0.75f, 0,
+			-0.5f, -0.5f, 0.5f, 0, 1, 0,
+			-0.5f, 0.5f, -0.5f, 0, 1, 0,
+			-0.5f, 0.5f, 0.5f, 0, 1, 0,
 
-			0.5f, -0.5f, -0.5f, 1, 1, 1,
-			0.5f, -0.5f, 0.5f, 1, 1, 1,
-			0.5f, 0.5f, -0.5f, 1, 1, 1,
-			0.5f, 0.5f, 0.5f, 1, 1, 1,
+			0.5f, -0.5f, -0.5f, 0, 1, 0,
+			0.5f, -0.5f, 0.5f, 0, 1, 0,
+			0.5f, 0.5f, -0.5f, 0, 1, 0,
+			0.5f, 0.5f, 0.5f, 0, 1, 0,
 		},
 		{ // indices
 			0, 2, 1, // -x
@@ -51,10 +51,14 @@ void Scene::create_cube(Engine& engine) {
 			1, 3, 7, // +z
 			1, 7, 5
 		},
-		Matrix(),
 		4 * 6
 	};
-	cube.init(engine, serial);
+	cube.set({
+		std::make_shared<Mesh>(std::move(cube_mesh)),
+		std::make_shared<Material>(std::move(cube_material)),
+		Matrix()
+	});
+	cube.init(engine);
 }
 
 void Scene::update(Engine& engine) {
@@ -76,7 +80,7 @@ void Scene::update(Engine& engine) {
 	transform.projection = camera.projection();
 
 	light.eye = camera.position;
-	light.light_position = Vector3::Transform(Vector3(1, 1, 0), transform.world * transform.view);
+	light.light_position = Vector3(1, 1, 0);
 
 	// children update
 	cube.update(engine);
