@@ -26,7 +26,7 @@ float4 main(PS_INPUT input): SV_TARGET {
 
 	float4 ambient_color = ambient;
 	float4 diffuse_color = max(dot(input.normal, L), 0.0f) * diffuse;
-	float4 specular_color = pow(max(dot(R, V), 0.0f), shininess.x) * specular;
+	float4 specular_color = pow(max(dot(R, V), 0.0f), 126 * shininess.x) * specular;
 
 	float4 color = ambient_color + diffuse_color + specular_color;
 

@@ -4,6 +4,10 @@ cbuffer WorldViewProjectionConstantBuffer: register(b0) {
 	matrix projection;
 };
 
+cbuffer ModelConstantBuffer: register(b2) {
+	matrix model;
+}
+
 struct GS_INPUT {
 	float4 position: SV_POSITION;
 	float4 color: COLOR;
@@ -26,18 +30,19 @@ void main(
 ) {
 	float3	a = (input[1].position - input[0].position).xyz,
 			b = (input[2].position - input[0].position).xyz;
-	float4 n4 = float4(normalize(cross(a, b)), 0.0f);
-	n4 = mul(world, n4);
-	//n4 = mul(view, n4);
-	float3 n3 = n4.xyz;
+	float3 n = normalize(cross(b, a));
+
+	matrix mwvp = mul(model, world);
+	mwvp = mul(mwvp, view);
+	mwvp = mul(mwvp, projection);
 
 	for (uint i = 0; i < 3; i++) {
 		GS_OUTPUT element;
-		element.position = input[i].position;
+		element.position = mul(input[i].position, mwvp);
 		element.color = input[i].color;
 		element.out_vec = input[i].out_vec;
 		element.light_vec = input[i].light_vec;
-		element.normal = n3;
+		element.normal = n;
 		output.Append(element);
 	}
 }
