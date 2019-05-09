@@ -39,6 +39,9 @@
     <ClCompile Include="Material.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="Light.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="includes.hpp">
@@ -74,21 +77,24 @@
     <ClInclude Include="Material.hpp">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
+    <ClInclude Include="Light.hpp">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="light_vertex.hlsl">
-      <Filter>Шейдеры</Filter>
-    </FxCompile>
     <FxCompile Include="..\shaders\base_pixel.hlsl">
       <Filter>Шейдеры</Filter>
     </FxCompile>
     <FxCompile Include="..\shaders\base_vertex.hlsl">
       <Filter>Шейдеры</Filter>
     </FxCompile>
-    <FxCompile Include="light_geometry.hlsl">
+    <FxCompile Include="..\shaders\light_geometry.hlsl">
       <Filter>Шейдеры</Filter>
     </FxCompile>
-    <FxCompile Include="light_pixel.hlsl">
+    <FxCompile Include="..\shaders\light_pixel.hlsl">
+      <Filter>Шейдеры</Filter>
+    </FxCompile>
+    <FxCompile Include="..\shaders\light_vertex.hlsl">
       <Filter>Шейдеры</Filter>
     </FxCompile>
   </ItemGroup>
