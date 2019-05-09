@@ -7,6 +7,7 @@
 #include "Input.hpp"
 #include "Camera.hpp"
 #include "Scene.hpp"
+#include "Image.hpp"
 
 struct Engine {
 	static LRESULT CALLBACK WndProc(
@@ -18,43 +19,34 @@ struct Engine {
 		ComPtr<ID3D11VertexShader>& vertex_shader,
 		std::wstring_view path
 	);
-	void load_pixel(
-		ComPtr<ID3D11PixelShader>& pixel_shader,
-		std::wstring_view path
-	);
-	void load_geometry(
-		ComPtr<ID3D11GeometryShader>& geometry_shader,
+	ComPtr<ID3D11PixelShader> load_pixel(std::wstring_view path);
+	ComPtr<ID3D11GeometryShader> load_geometry(
 		std::wstring_view path,
 		const D3D11_SO_DECLARATION_ENTRY* entrys, UINT num,
 		const UINT* strides, UINT num_strides
 	);
-	void load_geometry(
-		ComPtr<ID3D11GeometryShader>& geometry_shader,
+	ComPtr<ID3D11GeometryShader> load_geometry(
 		std::wstring_view path,
 		std::vector<D3D11_SO_DECLARATION_ENTRY> entrys
 	) {
 		return load_geometry(
-			geometry_shader, path,
+			path,
 			entrys.data(), (UINT)entrys.size(),
 			nullptr, 0
 		);
 	}
-	void load_geometry(
-		ComPtr<ID3D11GeometryShader>& geometry_shader,
+	ComPtr<ID3D11GeometryShader> load_geometry(
 		std::wstring_view path,
 		std::vector<D3D11_SO_DECLARATION_ENTRY> entrys,
 		std::vector<UINT> strides
 	) {
 		return load_geometry(
-			geometry_shader, path,
+			path,
 			entrys.data(), (UINT)entrys.size(),
 			strides.data(), (UINT)strides.size()
 		);
 	}
-	void load_geometry(
-		ComPtr<ID3D11GeometryShader>& geometry_shader,
-		std::wstring_view path
-	);
+	ComPtr<ID3D11GeometryShader> load_geometry(std::wstring_view path);
 	ComPtr<ID3D11Buffer> create_buffer(
 		D3D11_BIND_FLAG flag,
 		const void* data, UINT size,
@@ -74,6 +66,7 @@ struct Engine {
 	) {
 		return create_buffer(flag, vec.data(), (UINT)vec.size() * sizeof(T), mem_pitch, mem_slice_pitch);
 	}
+	std::pair<ComPtr<ID3D11Texture2D>, ComPtr<ID3D11ShaderResourceView>> create_texture(std::wstring_view path, UINT maxsize = 0);
 
 	std::wstring_view class_name = L"Application";
 	std::wstring_view window_title = L"Game";
@@ -98,6 +91,7 @@ struct Engine {
 	D3D11_TEXTURE2D_DESC buffer_desc;
 	D3D11_VIEWPORT viewport;
 	ComPtr<ID3D11Device> device;
+	ComPtr<IWICImagingFactory> imaging;
 	ComPtr<ID3D11DeviceContext> context;
 	ComPtr<IDXGISwapChain> swap_chain;
 	ComPtr<ID3D11Texture2D> buffer;
@@ -118,6 +112,7 @@ struct Engine {
 	void register_raw_input();
 	void create_window();
 	void create_d3dcontext();
+	void create_imaging();
 	void create_swap_chain();
 	void create_buffer();
 	void create_depth_stencil();
@@ -141,6 +136,8 @@ struct Engine {
 	void present() {
 		swap_chain->Present(1, 0);
 	}
+
+	~Engine();
 };
 
 #endif // !DXTRY_ENGINE_HPP
