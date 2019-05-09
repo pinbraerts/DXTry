@@ -88,6 +88,7 @@ void Engine::create_window() {
 		cy = (rect.top + rect.bottom) / 2;
 	check SetCursorPos(cx, cy);
 	SetCursor(nullptr);
+	check ClipCursor(nullptr);
 }
 
 void Engine::create_d3dcontext() {
