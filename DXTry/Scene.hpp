@@ -4,6 +4,7 @@
 #include "includes.hpp"
 #include "Camera.hpp"
 #include "Object.hpp"
+#include "Light.hpp"
 
 struct Scene: IObject {
 	struct {
@@ -12,20 +13,13 @@ struct Scene: IObject {
 		Matrix projection;
 	} transform;
 
-	struct {
-		Vector3 position;
-		Vector3 eye;
-		Vector4 color;
-		Vector2 _align;
-	} light;
-
-	ComPtr<ID3D11Buffer> constant_buffers[2];
+	ComPtr<ID3D11Buffer> constant_buffer;
 	Camera camera;
 
 	std::vector<Object> cubes;
 	void create_cubes(Engine& engine);
 
-	Object lamp;
+	Light lamp;
 	void create_lamp(Engine& engine);
 
 	void init(Engine& engine) override;
