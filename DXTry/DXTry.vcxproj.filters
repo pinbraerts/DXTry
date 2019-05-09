@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Шейдеры">
+      <UniqueIdentifier>{35a3a5ec-d461-4053-b4e1-64fb47387d14}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -58,11 +61,21 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="..\shaders\base_pixel.hlsl" />
-    <FxCompile Include="..\shaders\base_vertex.hlsl" />
-    <FxCompile Include="light_geometry.hlsl" />
-    <FxCompile Include="light_vertex.hlsl" />
-    <FxCompile Include="light_pixel.hlsl" />
+    <FxCompile Include="light_vertex.hlsl">
+      <Filter>Шейдеры</Filter>
+    </FxCompile>
+    <FxCompile Include="..\shaders\base_pixel.hlsl">
+      <Filter>Шейдеры</Filter>
+    </FxCompile>
+    <FxCompile Include="..\shaders\base_vertex.hlsl">
+      <Filter>Шейдеры</Filter>
+    </FxCompile>
+    <FxCompile Include="light_geometry.hlsl">
+      <Filter>Шейдеры</Filter>
+    </FxCompile>
+    <FxCompile Include="light_pixel.hlsl">
+      <Filter>Шейдеры</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="SimpleMath.inl">
