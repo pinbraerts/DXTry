@@ -10,10 +10,10 @@ struct MaterialSerial {
 	std::vector<D3D11_INPUT_ELEMENT_DESC> descriptors;
 
 	struct Constant {
-		float ambient_strength;
-		float diffuse_strength;
-		float specular_strength;
-		float shininess;
+		Vector3 ambient;
+		Vector3 diffuse;
+		Vector3 specular;
+		Vector3 shininess;
 	} constant;
 
 	std::wstring_view geometry_path;

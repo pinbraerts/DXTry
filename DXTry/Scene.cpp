@@ -14,22 +14,22 @@ void Scene::create_cube(Engine& engine) {
 					0, sizeof(Vector3), D3D11_INPUT_PER_VERTEX_DATA, 0 }
 			},
 			{
-				0.1f, // ambient strength
-				1.0f, // diffuse strength
-				0.5f, // specular strength
-				256 // shininess
+				{ 0.0215f, 0.1745f, 0.0215f }, // ambient
+				{ 0.07568f, 0.61424f, 0.07568f }, // diffuse
+				{ 0.633f, 0.727811f, 0.633f }, // specular
+				{ 0.6f, 0.0f, 0.0f } // shininess
 			},
 			L"light_geometry.cso"
 		},
 		{ // vertices
-			-0.5f, -0.5f, -0.5f, 0, 0, 0,
-			-0.5f, -0.5f, 0.5f, 0, 0, 1,
-			-0.5f, 0.5f, -0.5f, 0, 1, 0,
-			-0.5f, 0.5f, 0.5f, 0, 1, 1,
+			-0.5f, -0.5f, -0.5f, 1, 1, 1,
+			-0.5f, -0.5f, 0.5f, 1, 1, 1,
+			-0.5f, 0.5f, -0.5f, 1, 1, 1,
+			-0.5f, 0.5f, 0.5f, 1, 1, 1,
 
-			0.5f, -0.5f, -0.5f, 1, 0, 0,
-			0.5f, -0.5f, 0.5f, 1, 0, 1,
-			0.5f, 0.5f, -0.5f, 1, 1, 0,
+			0.5f, -0.5f, -0.5f, 1, 1, 1,
+			0.5f, -0.5f, 0.5f, 1, 1, 1,
+			0.5f, 0.5f, -0.5f, 1, 1, 1,
 			0.5f, 0.5f, 0.5f, 1, 1, 1,
 		},
 		{ // indices
