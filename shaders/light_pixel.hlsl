@@ -1,12 +1,11 @@
 cbuffer LightConstantBuffer: register(b1) {
-	float4 _light_position;
-	float4 _eye;
-
+	float4 position_world; // premultiplied on world
+	float4 eye_world; // premultiplied on world
 	float4 light_ambient;
 	float4 light_diffuse;
 	float4 light_specular;
-
 	float4 att;
+	float4 direction_world; // premultiplied on world
 };
 
 cbuffer MaterialConstantBuffer: register(b3) {
@@ -34,15 +33,27 @@ float4 main(PS_INPUT input): SV_TARGET {
 
 	float4 color = ambient_color + diffuse_color + specular_color;
 
-	if (_light_position.w < 0.5f) { // light is point
+	if (position_world.w < 0.3f) { // light is point or flashlight
 		float d = length(input.light_vec);
 		float attenuation = att.x; // constant
 		attenuation += att.y * d; // linear
 		d *= d;
 		attenuation += att.z * d; // quadratic
-		d *= d;
-		attenuation += att.w * d; // cubic
-		color = float4(color.xyz / attenuation, color.w);
+
+		float w = color.w;
+		color /= attenuation;
+		color.w = w;
+
+		float theta = dot(-L.xyz, normalize(direction_world.xyz));
+		float cut_off = att.w;
+		float outer = direction_world.w;
+
+		float epsilon = cut_off - outer;
+		float intensity = clamp((theta - outer) / epsilon, 0.0, 1.0);
+
+		w = color.w;
+		color = ambient_color + (diffuse_color + specular_color) * intensity;
+		color.w = w;
 	}
 
 	return color;

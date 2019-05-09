@@ -5,14 +5,13 @@ cbuffer WorldViewProjectionConstantBuffer: register(b0) {
 };
 
 cbuffer LightConstantBuffer: register(b1) {
-	float4 light_vec;
-	float4 eye;
-
-	float4 _light_ambient;
-	float4 _light_diffuse;
-	float4 _light_specular;
-
-	float4 _light_attenuation;
+	float4 position_world; // premultiplied on world
+	float4 eye_world; // premultiplied on world
+	float4 ambient;
+	float4 diffuse;
+	float4 specular;
+	float4 attenuation;
+	float4 direction; // premultiplied on world
 };
 
 cbuffer ModelConstantBuffer: register(b2) {
@@ -39,16 +38,13 @@ VS_OUTPUT main(VS_INPUT input) {
 
 	pos = mul(pos, world);
 
-	float4 light_dir = mul(float4(light_vec.xyz, 0.0f), world);
-
-	if (light_vec.w < 0.5f) { // light is point
+	float4 light_dir = float4(position_world.xyz, 0.0f);
+	if (position_world.w < 0.6f) { // light is point or flash
 		light_dir -= pos;
 	}
 	output.light_vec = light_dir.xyz;
 
-	float4 out_vec = pos - mul(eye, world);
-	//out_vec = mul(out_vec, view);
-	output.out_vec = out_vec.xyz;
+	output.out_vec = pos.xyz - eye_world.xyz;
 
 	return output;
 }

@@ -79,7 +79,10 @@ void Scene::update(Engine& engine) {
 	transform.view = camera.view();
 	transform.projection = camera.projection();
 
-	lamp.eye = Vector4(camera.position.x, camera.position.y, camera.position.z, 1);
+	lamp.position = camera.position + Vector4(0, 0, 0, lamp.position.w); // flashlight
+	lamp.eye = camera.position + Vector4(0, 0, 0, 1.0f);
+	lamp.direction = camera.direction() + Vector4(0, 0, 0, lamp.direction.w);
+	lamp.premultiply(transform.world);
 
 	// children update
 	for(auto& cube: cubes)
@@ -98,7 +101,7 @@ void Scene::update(Engine& engine) {
 
 void Scene::render(Engine& engine) {
 	// set correct buffers
-	ID3D11Buffer* pscbs[]{
+	ID3D11Buffer* pscbs[] {
 		constant_buffer.Get()
 	};
 	engine.context->VSSetConstantBuffers(0, (UINT)std::size(pscbs), pscbs);
@@ -160,12 +163,13 @@ void Scene::create_lamp(Engine & engine) {
 		std::make_unique<Material>(std::move(lamp_material)),
 		Matrix()
 	}, {
-		Vector4(1, 1, 1, 0), // position
+		Vector4::Zero, // position, flashlight
 		Vector4::Zero, // eye
 		Vector4(1, 1, 1, 1), // ambient
 		Vector4(0.8f, 0.8f, 0.8f, 1), // diffuse
 		Vector4(1, 1, 1, 1), // specular
-		Vector4(1, 0.09f, 0.032f, 0) // attenuation
+		Vector4(1, 0.09f, 0.032f, cosf(XMConvertToRadians(12.5f))), // attenuation, cut_off
+		Vector4(0, 0, 0, cosf(XMConvertToRadians(17.5f))) // direction, outer
 	});
 	lamp.init(engine);
 }
