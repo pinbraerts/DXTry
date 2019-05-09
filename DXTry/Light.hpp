@@ -7,17 +7,19 @@
 struct LightData {
 	Vector4 position;
 	Vector4 eye;
-
 	Vector4 ambient;
 	Vector4 diffuse;
 	Vector4 specular;
-	Vector4 _align;
+	Vector4 attenuation;
+	Vector4 direction;
 };
 
 struct Light: LightData, Object {
 	ComPtr<ID3D11Buffer> constant_light;
 
 	void set(ObjectData&& data, LightData l);
+
+	void premultiply(const Matrix& world);
 
 	void init(Engine& engine) override;
 	void update(Engine& engine) override;
