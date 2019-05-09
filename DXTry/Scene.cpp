@@ -16,21 +16,18 @@ void Scene::create_cubes(Engine& engine) {
 		L"light_geometry.cso",
 		{ // descriptors
 			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,
-				0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-
-			{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT,
-				0, sizeof(Vector3), D3D11_INPUT_PER_VERTEX_DATA, 0 }
+				0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 		},
 		{ // vertices
-			-0.5f, -0.5f, -0.5f, 0, 0.75f, 0,
-			-0.5f, -0.5f, 0.5f, 0, 1, 0,
-			-0.5f, 0.5f, -0.5f, 0, 1, 0,
-			-0.5f, 0.5f, 0.5f, 0, 1, 0,
+			-0.5f, -0.5f, -0.5f,
+			-0.5f, -0.5f, 0.5f,
+			-0.5f, 0.5f, -0.5f,
+			-0.5f, 0.5f, 0.5f,
 
-			0.5f, -0.5f, -0.5f, 0, 1, 0,
-			0.5f, -0.5f, 0.5f, 0, 1, 0,
-			0.5f, 0.5f, -0.5f, 0, 1, 0,
-			0.5f, 0.5f, 0.5f, 0, 1, 0,
+			0.5f, -0.5f, -0.5f,
+			0.5f, -0.5f, 0.5f,
+			0.5f, 0.5f, -0.5f,
+			0.5f, 0.5f, 0.5f,
 		},
 		{ // indices
 			0, 2, 1, // -x
@@ -51,7 +48,7 @@ void Scene::create_cubes(Engine& engine) {
 			1, 3, 7, // +z
 			1, 7, 5
 		},
-		4 * 6
+		sizeof(Vector3) * 1
 	};
 	cubes.emplace_back(engine, ObjectData {
 		std::make_shared<Mesh>(std::move(cube_mesh)),
@@ -82,7 +79,7 @@ void Scene::update(Engine& engine) {
 	transform.view = camera.view();
 	transform.projection = camera.projection();
 
-	light.eye = camera.position;
+	lamp.eye = Vector4(camera.position.x, camera.position.y, camera.position.z, 1);
 
 	// children update
 	for(auto& cube: cubes)
@@ -90,18 +87,10 @@ void Scene::update(Engine& engine) {
 	lamp.update(engine);
 
 	engine.context->UpdateSubresource(
-		constant_buffers[0].Get(),
+		constant_buffer.Get(),
 		0,
 		nullptr,
 		&transform,
-		0,
-		0
-	);
-	engine.context->UpdateSubresource(
-		constant_buffers[1].Get(),
-		0,
-		nullptr,
-		&light,
 		0,
 		0
 	);
@@ -109,18 +98,16 @@ void Scene::update(Engine& engine) {
 
 void Scene::render(Engine& engine) {
 	// set correct buffers
-	engine.context->VSSetConstantBuffers(0, (UINT)std::size(constant_buffers), (ID3D11Buffer**)constant_buffers);
-	engine.context->GSSetConstantBuffers(0, (UINT)std::size(constant_buffers), (ID3D11Buffer**)constant_buffers);
-
-	ID3D11Buffer* pscbs[] {
-		constant_buffers[1].Get()
+	ID3D11Buffer* pscbs[]{
+		constant_buffer.Get()
 	};
-	engine.context->PSSetConstantBuffers(1, (UINT)std::size(pscbs), pscbs);
+	engine.context->VSSetConstantBuffers(0, (UINT)std::size(pscbs), pscbs);
+	engine.context->GSSetConstantBuffers(0, (UINT)std::size(pscbs), pscbs);
 
 	// render children
+	lamp.render(engine);
 	for (auto& cube : cubes)
 		cube.render(engine);
-	lamp.render(engine);
 }
 
 void Scene::create_lamp(Engine & engine) {
@@ -137,15 +124,15 @@ void Scene::create_lamp(Engine & engine) {
 				0, sizeof(Vector3), D3D11_INPUT_PER_VERTEX_DATA, 0 }
 		},
 		{ // vertices
-			-0.5f, -0.5f, -0.5f, 1, 1, 1,
-			-0.5f, -0.5f, 0.5f, 1, 1, 1,
-			-0.5f, 0.5f, -0.5f, 1, 1, 1,
-			-0.5f, 0.5f, 0.5f, 1, 1, 1,
+			-0.5f, -0.5f, -0.5f,
+			-0.5f, -0.5f, 0.5f,
+			-0.5f, 0.5f, -0.5f,
+			-0.5f, 0.5f, 0.5f,
 
-			0.5f, -0.5f, -0.5f, 1, 1, 1,
-			0.5f, -0.5f, 0.5f, 1, 1, 1,
-			0.5f, 0.5f, -0.5f, 1, 1, 1,
-			0.5f, 0.5f, 0.5f, 1, 1, 1,
+			0.5f, -0.5f, -0.5f,
+			0.5f, -0.5f, 0.5f,
+			0.5f, 0.5f, -0.5f,
+			0.5f, 0.5f, 0.5f,
 		},
 		{ // indices
 			0, 2, 1, // -x
@@ -166,27 +153,26 @@ void Scene::create_lamp(Engine & engine) {
 			1, 3, 7, // +z
 			1, 7, 5
 		},
-		4 * 6
+		sizeof(Vector3) * 1
 	};
 	lamp.set({
 		std::make_unique<Mesh>(std::move(lamp_mesh)),
 		std::make_unique<Material>(std::move(lamp_material)),
 		Matrix()
+	}, {
+		Vector4(5, 5, 5, 1),
+		Vector4::Zero,
+		Vector4(1, 1, 1, 1),
+		Vector4(0.8f, 0.8f, 0.8f, 1),
+		Vector4(1, 1, 1, 1)
 	});
 	lamp.init(engine);
 }
 
 void Scene::init(Engine& engine) {
 	// init fields
-	constant_buffers[0] = engine.create_buffer(D3D11_BIND_CONSTANT_BUFFER, sizeof(transform));
-	constant_buffers[1] = engine.create_buffer(D3D11_BIND_CONSTANT_BUFFER, sizeof(light));
+	constant_buffer = engine.create_buffer(D3D11_BIND_CONSTANT_BUFFER, sizeof(transform));
 	camera.aspect_ratio = (float)engine.buffer_desc.Width / (float)engine.buffer_desc.Height;
-
-	light = {
-		Vector3(5, 5, 5),
-		Vector3::Zero,
-		Vector4(1, 1, 1, 1)
-	};
 
 	// init children
 	create_cubes(engine);
