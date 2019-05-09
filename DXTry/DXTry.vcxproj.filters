@@ -82,19 +82,19 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="light_vertex.hlsl">
-      <Filter>Шейдеры</Filter>
-    </FxCompile>
     <FxCompile Include="..\shaders\base_pixel.hlsl">
       <Filter>Шейдеры</Filter>
     </FxCompile>
     <FxCompile Include="..\shaders\base_vertex.hlsl">
       <Filter>Шейдеры</Filter>
     </FxCompile>
-    <FxCompile Include="light_geometry.hlsl">
+    <FxCompile Include="..\shaders\light_geometry.hlsl">
       <Filter>Шейдеры</Filter>
     </FxCompile>
-    <FxCompile Include="light_pixel.hlsl">
+    <FxCompile Include="..\shaders\light_pixel.hlsl">
+      <Filter>Шейдеры</Filter>
+    </FxCompile>
+    <FxCompile Include="..\shaders\light_vertex.hlsl">
       <Filter>Шейдеры</Filter>
     </FxCompile>
   </ItemGroup>

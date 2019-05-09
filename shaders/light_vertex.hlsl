@@ -5,9 +5,13 @@ cbuffer WorldViewProjectionConstantBuffer: register(b0) {
 };
 
 cbuffer LightConstantBuffer: register(b1) {
-	float3 light_vec;
-	float3 eye;
-	float4 light_color;
+	float4 light_vec;
+	float4 eye;
+
+	float4 light_ambient;
+	float4 light_diffuse;
+	float4 light_specular;
+	float4 _align;
 };
 
 cbuffer ModelConstantBuffer: register(b2) {
@@ -16,12 +20,10 @@ cbuffer ModelConstantBuffer: register(b2) {
 
 struct VS_INPUT {
 	float3 position: POSITION;
-	float3 color: COLOR;
 };
 
 struct VS_OUTPUT {
 	float4 position: SV_POSITION;
-	float4 color: COLOR;
 	float3 light_vec: POSITION0;
 	float3 out_vec: POSITION1;
 };
@@ -36,14 +38,14 @@ VS_OUTPUT main(VS_INPUT input) {
 
 	pos = mul(pos, world);
 
-	// Just pass through the color data
-	output.color = float4(input.color, 1.0f);
+	float4 light_dir = mul(float4(light_vec.xyz, 0.0f), world);
 
-	float4 light_dir = mul(float4(light_vec, 0.0f), world) - pos;
-	//light_vec = mul(light_vec, view);
+	if (light_vec.w < 0.5) { // light is positional
+		light_dir -= pos;
+	}
 	output.light_vec = light_dir.xyz;
 
-	float4 out_vec = pos - mul(float4(eye, 0.0f), world);
+	float4 out_vec = pos - mul(eye, world);
 	//out_vec = mul(out_vec, view);
 	output.out_vec = out_vec.xyz;
 

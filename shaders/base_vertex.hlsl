@@ -16,12 +16,10 @@ cbuffer ModelConstantBuffer : register(b2) {
 
 struct VS_INPUT {
 	float3 position: POSITION;
-	float3 color: COLOR;
 };
 
 struct VS_OUTPUT {
 	float4 position: SV_POSITION;
-	float4 color: COLOR;
 };
 
 VS_OUTPUT main(VS_INPUT input) {
@@ -36,9 +34,6 @@ VS_OUTPUT main(VS_INPUT input) {
 	pos = mul(pos, view);
 	pos = mul(pos, projection);
 	output.position = pos;
-
-	// Just pass through the color data
-	output.color = float4(input.color, 1.0f);
 
 	return output;
 }

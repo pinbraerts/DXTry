@@ -6,14 +6,12 @@ cbuffer WorldViewProjectionConstantBuffer: register(b0) {
 
 struct GS_INPUT {
 	float4 position: SV_POSITION;
-	float4 color: COLOR;
 	float3 light_vec: POSITION0;
 	float3 out_vec: POSITION1;
 };
 
 struct GS_OUTPUT {
 	float4 position: SV_POSITION;
-	float4 color: COLOR;
 	float3 light_vec: POSITION0;
 	float3 out_vec: POSITION1;
 	float3 normal: NORMAL;
@@ -34,7 +32,6 @@ void main(
 	for (uint i = 0; i < 3; i++) {
 		GS_OUTPUT element;
 		element.position = mul(input[i].position, wvp);
-		element.color = input[i].color;
 		element.out_vec = input[i].out_vec;
 		element.light_vec = input[i].light_vec;
 		element.normal = n;
