@@ -5,6 +5,7 @@
 
 struct MaterialData {
 	std::wstring_view pixel_path;
+	std::wstring_view texture_path;
 
 	struct LightConstant {
 		Vector4 ambient;
@@ -17,6 +18,9 @@ struct MaterialData {
 struct Material : IObject, MaterialData {
 	ComPtr<ID3D11PixelShader> pixel_shader;
 	ComPtr<ID3D11Buffer> constant_buffer;
+	ComPtr<ID3D11Texture2D> texture;
+	ComPtr<ID3D11ShaderResourceView> texture_view;
+	ComPtr<ID3D11SamplerState> sampler;
 
 	Material() = default;
 	Material(MaterialData&& data);
